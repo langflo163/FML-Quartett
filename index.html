@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FML Quartett</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#D3202A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quartett">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/logo.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* FML Quartett – Kartenstapel zum Wischen, Tippen öffnet Datenblatt. FML-Optik: flach, Rot/Weiß/Schwarz, keine Verläufe. */
+:root{
+  --bg:#ECEBEA; --card:#FFFFFF; --ink:#141414; --muted:#6B6866; --line:#DCD9D6;
+  --red:#D3202A; --on-red:#FFFFFF; --photo:#E3E1DF;
+  --f-display:"Saira Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sl:max(16px,env(safe-area-inset-left,0px)); --sr:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0F0F10; --card:#1B1B1D; --ink:#F2F1F0; --muted:#9C9895; --line:#2E2D2F;
+  --red:#E0313A; --photo:#262528; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
+img{max-width:100%}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+.top{background:var(--red);color:var(--on-red);padding:calc(10px + env(safe-area-inset-top,0px)) var(--sr) 12px var(--sl);display:flex;flex-direction:column;gap:12px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bl{display:flex;align-items:center;gap:10px}
+.logo{width:40px;height:40px;flex:none;border-radius:9px;outline:2px solid var(--on-red)}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:26px;letter-spacing:.5px;line-height:1;text-transform:uppercase}
+.tools{display:flex;gap:8px;align-items:center}
+.ibtn{min-width:38px;border:1.5px solid var(--on-red);background:transparent;color:var(--on-red);border-radius:8px;padding:5px 10px;font-family:var(--f-display);font-weight:700;letter-spacing:.6px;text-transform:uppercase;font-size:14px;cursor:pointer}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1*var(--sr)) 0 calc(-1*var(--sl));padding:0 var(--sr) 0 var(--sl)}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1.5px solid var(--on-red);background:transparent;color:var(--on-red);border-radius:999px;padding:4px 13px;font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.6px;text-transform:uppercase;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--on-red);color:var(--red)}
+.status{padding:8px var(--sr) 0 var(--sl);font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:10px}
+
+.deck{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px var(--sr) 18px var(--sl);scroll-padding-inline:var(--sl);scrollbar-width:none}
+.deck::-webkit-scrollbar{display:none}
+.qcard{flex:none;width:min(340px,84vw);scroll-snap-align:start;background:var(--card);border:2px solid var(--ink);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;text-align:left;padding:0}
+.qhead{display:flex;align-items:stretch;background:var(--red);color:var(--on-red)}
+.code{font-family:var(--f-display);font-weight:800;font-size:26px;line-height:1;padding:8px 12px;background:var(--ink);color:var(--card);min-width:56px;text-align:center}
+.qhead .cat{flex:1;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:1.2px;text-transform:uppercase}
+.photo{position:relative;aspect-ratio:4/3;width:100%;background:var(--photo);border-bottom:2px solid var(--ink);overflow:hidden}
+.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted)}
+.ph .big{font-family:var(--f-display);font-weight:800;font-size:64px;line-height:1;color:var(--line)}
+.ph small{font-size:12px;letter-spacing:1px;text-transform:uppercase}
+.qname{padding:10px 14px 2px}
+.qname h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:26px;line-height:1.02;text-transform:uppercase;text-wrap:balance}
+.qname p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.stats{list-style:none;margin:8px 0 0;padding:0}
+.stats li{display:flex;justify-content:space-between;gap:12px;padding:6px 14px;border-top:1px solid var(--line);font-size:14px}
+.stats li:nth-child(odd){background:color-mix(in srgb,var(--photo) 45%,transparent)}
+.stats .k{color:var(--muted);text-transform:uppercase;font-size:12px;letter-spacing:.8px;align-self:center}
+.stats .v{font-family:var(--f-mono);font-weight:500;font-variant-numeric:tabular-nums;text-align:right;min-width:0;overflow-wrap:anywhere}
+.v.open{color:var(--muted);font-weight:400}
+.qfoot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:2px solid var(--ink);font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.8px;text-transform:uppercase}
+.qfoot span:last-child{color:var(--red)}
+.dots{display:flex;justify-content:center;gap:6px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--red)}
+.empty{margin:24px var(--sr) 0 var(--sl);padding:22px;border:2px dashed var(--line);border-radius:14px;color:var(--muted);text-align:center}
+
+/* Einrichtung */
+.setup{max-width:520px;margin:20px auto 0;padding:0 var(--sr) 40px var(--sl);display:flex;flex-direction:column;gap:14px}
+.setup h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:26px;text-transform:uppercase}
+.setup p{margin:0}
+.setup ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.setup label{font-weight:600;font-size:13px}
+.setup input{width:100%;padding:10px 12px;border:2px solid var(--ink);border-radius:10px;background:var(--card);font-family:var(--f-mono);font-size:14px}
+.pbtn{border:0;background:var(--ink);color:var(--bg);border-radius:10px;padding:11px 16px;font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:.8px;text-transform:uppercase;cursor:pointer}
+.sbtn{border:1.5px solid var(--ink);background:var(--card);border-radius:10px;padding:9px 14px;cursor:pointer}
+.err{color:var(--red);font-weight:500}
+.hint{color:var(--muted);font-size:13px}
+
+/* Datenblatt */
+.sheet{position:fixed;inset:0;background:var(--bg);overflow-y:auto;z-index:20;padding-bottom:calc(32px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch}
+.sbar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;background:var(--red);color:var(--on-red);padding:calc(8px + env(safe-area-inset-top,0px)) var(--sr) 8px var(--sl)}
+.sbar .code{font-size:22px;padding:6px 10px;min-width:auto;border-radius:6px}
+.sbar h3{flex:1;margin:0;font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;line-height:1.05;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.swrap{max-width:720px;margin:0 auto;padding:14px var(--sr) 0 var(--sl);display:flex;flex-direction:column;gap:18px}
+.sphoto{border:2px solid var(--ink);border-radius:12px;overflow:hidden}
+.sphoto .photo{border-bottom:0}
+.lead h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:32px;line-height:1;text-transform:uppercase;text-wrap:balance}
+.lead p{margin:4px 0 0;color:var(--muted)}
+.sec h4{margin:0 0 8px;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:1.2px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.box{background:var(--card);border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.box .stats{margin:0}
+.box .stats li:first-child{border-top:0}
+.src{display:block;font-family:var(--f-body);font-size:11px;color:var(--muted);font-weight:400}
+.grp{padding:8px 14px 4px;font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:1.4px;text-transform:uppercase;color:var(--red);border-top:1px solid var(--line)}
+.grp:first-child{border-top:0}
+.part{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:7px 14px;border-top:1px solid var(--line)}
+.grp+.part{border-top:0}
+.part .n{min-width:0;font-weight:500;font-size:14px}
+.part .m{grid-column:1/2;font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;min-width:0}
+.part .m code{font-family:var(--f-mono);font-size:11.5px}
+.part .p{grid-row:1/3;grid-column:2;align-self:center;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;text-align:right}
+.costs-off .p,.costs-off .totalrow{display:none}
+.totalrow{display:flex;justify-content:space-between;padding:10px 14px;border-top:2px solid var(--ink);font-family:var(--f-display);font-weight:800;font-size:18px;text-transform:uppercase}
+.totalrow span:last-child{font-family:var(--f-mono);font-size:16px;font-variant-numeric:tabular-nums}
+.toggle{border:1.5px solid var(--ink);background:var(--card);border-radius:999px;padding:3px 11px;font-family:var(--f-body);font-weight:600;font-size:12px;letter-spacing:0;text-transform:none;cursor:pointer}
+.toggle[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.notes{margin:0;padding:10px 14px;font-size:14px}
+.notes li{margin-left:16px}
+@media (prefers-reduced-motion:no-preference){.qcard{transition:transform .15s}.qcard:active{transform:scale(.985)}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="bl"><img class="logo" src="icons/icon-180.png" alt=""><h1>FML Quartett</h1></div>
+    <div class="tools"><button class="ibtn" id="reload" hidden aria-label="Neu laden">↻</button><button class="ibtn" id="settings" hidden>Token</button></div>
+  </div>
+  <nav class="chips" id="chips" aria-label="Kategorie"></nav>
+</header>
+
+<section class="setup" id="setup" hidden>
+  <h2>Einrichten</h2>
+  <p>Die Modelldaten liegen in deinem privaten Repo. Die App braucht einmalig einen GitHub-Token mit Lesezugriff. Er wird nur auf diesem Gerät gespeichert.</p>
+  <ol class="hint">
+    <li>GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token</li>
+    <li>Repository access: Only select repositories → FML-Github</li>
+    <li>Permissions: Contents → Read-only</li>
+  </ol>
+  <label for="token">Token</label>
+  <input id="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…">
+  <button class="pbtn" id="save">Verbinden</button>
+  <button class="sbtn" id="forget" hidden>Token von diesem Gerät löschen</button>
+  <p class="err" id="setupErr" hidden></p>
+</section>
+
+<main id="main" hidden>
+  <div class="status"><span id="count">–</span><span id="stamp"></span></div>
+  <div class="deck" id="deck"></div>
+  <div class="dots" id="dots"></div>
+  <div class="empty" id="empty" hidden></div>
+</main>
+<section class="sheet costs-off" id="sheet" hidden role="dialog" aria-modal="true"></section>
+
+<script>
+const REPO="langflo163/FML-Github", INDEX="FML-Quartett/modelle.json";
+const KATS=[["alle","Alle",""],["auto","Autos","A"],["flugzeug","Flugzeuge","F"],["boot","Boote","B"],["heli","Helis","H"]];
+const KLABEL={auto:"RC-Car",flugzeug:"Flugzeug",boot:"Boot",heli:"Hubschrauber"};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const eur=n=>n==null?"—":n.toLocaleString("de-DE",{style:"currency",currency:"EUR"});
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
+let models=[],filter=store.get("fmlq.filter")||"alle",openId=null,showCosts=false;
+const photoUrls={};
+
+async function gh(path,raw){
+  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${encodeURI(path)}`,{headers:{Authorization:"Bearer "+store.get("fmlq.token"),Accept:"application/vnd.github.raw+json","X-GitHub-Api-Version":"2022-11-28"},cache:"no-store"});
+  if(!r.ok){const e=new Error("http");e.status=r.status;throw e}
+  return raw==="blob"?r.blob():r.json();
+}
+async function load(){
+  $("#count").textContent="Lädt …";
+  const idx=await gh(INDEX);
+  const list=await Promise.all(idx.modelle.map(async dir=>{
+    try{const m=await gh(dir+"/quartett.json");m._dir=dir;return m}catch(e){return null}
+  }));
+  models=list.filter(Boolean);
+  store.set("fmlq.cache",JSON.stringify({t:Date.now(),models}));
+  render(new Date());
+  models.forEach(m=>{ if(m.foto&&!photoUrls[m.id]) gh(m._dir+"/"+m.foto,"blob").then(b=>{photoUrls[m.id]=URL.createObjectURL(b);render()}).catch(()=>{}) });
+}
+function withCodes(list){
+  const by={};
+  return [...list].sort((a,b)=>(a.nr??99)-(b.nr??99)).map(m=>{
+    const L=(KATS.find(k=>k[0]===m.kategorie)||[,,"X"])[2]||"X";
+    by[L]=(by[L]||0)+1; return {...m,code:L+by[L]};
+  });
+}
+function photoHTML(m){
+  const u=photoUrls[m.id];
+  return `<div class="photo"><div class="ph"><span class="big">${esc(m.code)}</span><small>${m.foto?"Foto lädt":"Foto folgt"}</small></div>${u?`<img src="${u}" alt="${esc(m.name)}">`:""}</div>`;
+}
+function statRows(m,withSrc){
+  return (m.werte||[]).map(w=>`<li><span class="k">${esc(w.label)}</span><span class="v${w.wert?"":" open"}">${esc(w.wert||"offen")}${withSrc&&w.quelle?`<span class="src">${esc(w.quelle)}</span>`:""}</span></li>`).join("");
+}
+function renderChips(){
+  $("#chips").innerHTML=KATS.map(([k,l])=>`<button class="chip" aria-pressed="${filter===k}" data-k="${k}">${l}</button>`).join("");
+}
+function render(when){
+  renderChips();
+  const list=withCodes(models).filter(m=>filter==="alle"||m.kategorie===filter);
+  $("#count").textContent=`${list.length} ${list.length===1?"Karte":"Karten"}`;
+  if(when) $("#stamp").textContent="Stand "+when.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  $("#empty").hidden=list.length>0;
+  $("#empty").textContent=models.length?"In dieser Kategorie gibt es noch keine Karte.":"Noch keine Modelle im Repo.";
+  $("#deck").innerHTML=list.map(m=>`
+    <button class="qcard" data-id="${esc(m.id)}" aria-label="${esc(m.name)} – Datenblatt öffnen">
+      <div class="qhead"><span class="code">${esc(m.code)}</span><span class="cat"><span>${esc(KLABEL[m.kategorie]||m.kategorie)}</span><span>${esc(m.massstab||"")}</span></span></div>
+      ${photoHTML(m)}
+      <div class="qname"><h2>${esc(m.name)}</h2><p>${esc(m.untertitel||"")}</p></div>
+      <ul class="stats">${statRows(m,false)}</ul>
+      <div class="qfoot"><span>${(m.komponenten||[]).length} Komponenten</span><span>Datenblatt ›</span></div>
+    </button>`).join("");
+  $("#dots").innerHTML=list.length>1?list.map((_,i)=>`<i class="${i===0?"on":""}"></i>`).join(""):"";
+  if(openId) renderSheet();
+}
+function renderSheet(){
+  const m=withCodes(models).find(x=>x.id===openId); const s=$("#sheet");
+  if(!m){closeSheet();return}
+  const groups={};(m.komponenten||[]).forEach(k=>{(groups[k.gruppe||"Sonstiges"]??=[]).push(k)});
+  const sum=(m.komponenten||[]).reduce((a,k)=>a+(k.preis||0)*(k.menge||1),0);
+  const parts=Object.entries(groups).map(([g,ks])=>`<div class="grp">${esc(g)}</div>`+ks.map(k=>`
+    <div class="part"><span class="n">${k.menge>1?k.menge+"× ":""}${esc(k.name)}</span>
+    <span class="m">${k.artnr?`<code>${esc(k.artnr)}</code>`:""}${k.shop?`<span>${esc(k.shop)}</span>`:""}${k.hinweis?`<span>${esc(k.hinweis)}</span>`:""}</span>
+    <span class="p">${k.inSet?"im Set":eur(k.preis==null?null:k.preis*(k.menge||1))}</span></div>`).join("")).join("");
+  s.className="sheet"+(showCosts?"":" costs-off");
+  s.innerHTML=`
+    <div class="sbar"><span class="code">${esc(m.code)}</span><h3>${esc(m.name)}</h3><button class="ibtn" id="close">Zurück</button></div>
+    <div class="swrap">
+      <div class="sphoto">${photoHTML(m)}</div>
+      <div class="lead"><h2>${esc(m.name)}</h2><p>${esc(KLABEL[m.kategorie]||"")} · ${esc(m.massstab||"")} · ${esc(m.untertitel||"")}</p></div>
+      <div class="sec"><h4>Technische Daten</h4><div class="box"><ul class="stats">${statRows(m,true)}</ul></div></div>
+      <div class="sec"><h4><span>Verbaute Komponenten</span><button class="toggle" id="costs" aria-pressed="${showCosts}">${showCosts?"Kosten ausblenden":"Kosten zeigen"}</button></h4>
+        <div class="box">${parts||'<p class="notes">Noch keine Komponenten erfasst.</p>'}<div class="totalrow"><span>Gesamt</span><span>${eur(sum)}</span></div></div></div>
+      ${(m.offen||[]).length?`<div class="sec"><h4>Noch offen</h4><div class="box"><ul class="notes">${m.offen.map(o=>`<li>${esc(o)}</li>`).join("")}</ul></div></div>`:""}
+    </div>`;
+  s.hidden=false;
+}
+function openSheet(id){openId=id;showCosts=false;renderSheet();$("#sheet").scrollTop=0}
+function closeSheet(){openId=null;$("#sheet").hidden=true}
+
+function showSetup(msg){
+  $("#main").hidden=true;$("#setup").hidden=false;$("#chips").hidden=true;
+  $("#reload").hidden=true;$("#settings").hidden=true;
+  $("#forget").hidden=!store.get("fmlq.token");
+  $("#setupErr").hidden=!msg;$("#setupErr").textContent=msg||"";
+}
+function showMain(){
+  $("#setup").hidden=true;$("#main").hidden=false;$("#chips").hidden=false;
+  $("#reload").hidden=false;$("#settings").hidden=false;
+}
+function errText(e){
+  if(e&&e.status===401) return "Der Token wird nicht akzeptiert. Bitte prüfen, ob er vollständig kopiert und noch gültig ist.";
+  if(e&&e.status===404) return "Kein Zugriff auf FML-Github. Beim Token unter Repository access FML-Github auswählen und Contents auf Read-only setzen.";
+  if(e&&e.status===403) return "GitHub blockiert gerade die Anfrage. In ein paar Minuten noch einmal versuchen.";
+  return "Keine Verbindung zu GitHub. Internet prüfen und neu laden.";
+}
+async function start(){
+  if(!store.get("fmlq.token")){showSetup();return}
+  showMain();
+  const c=store.get("fmlq.cache");
+  if(c){try{const d=JSON.parse(c);models=d.models||[];render(new Date(d.t))}catch(e){}}
+  try{await load()}
+  catch(e){
+    if(e.status===401||e.status===404) showSetup(errText(e));
+    else {$("#count").textContent=models.length?"Offline – letzter Stand":"Offline";if(!models.length){$("#empty").hidden=false;$("#empty").textContent=errText(e)}}
+  }
+}
+
+document.addEventListener("click",e=>{
+  const c=e.target.closest(".chip"); if(c){filter=c.dataset.k;store.set("fmlq.filter",filter);render();$("#deck").scrollLeft=0;return}
+  const q=e.target.closest(".qcard"); if(q){openSheet(q.dataset.id);return}
+  if(e.target.closest("#close")){closeSheet();return}
+  if(e.target.closest("#costs")){showCosts=!showCosts;renderSheet();return}
+  if(e.target.closest("#reload")){start();return}
+  if(e.target.closest("#settings")){showSetup();return}
+  if(e.target.closest("#forget")){store.set("fmlq.token",null);store.set("fmlq.cache",null);models=[];$("#token").value="";showSetup();return}
+  if(e.target.closest("#save")){
+    const t=$("#token").value.trim(); if(!t){showSetup("Bitte den Token einfügen.");return}
+    store.set("fmlq.token",t); start(); return
+  }
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&openId)closeSheet()});
+$("#deck").addEventListener("scroll",()=>{
+  const d=$("#deck"),cards=d.querySelectorAll(".qcard");if(!cards.length)return;
+  const i=Math.round(d.scrollLeft/(cards[0].offsetWidth+14));
+  document.querySelectorAll(".dots i").forEach((el,j)=>el.classList.toggle("on",j===i));
+},{passive:true});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&store.get("fmlq.token")&&!openId)load().catch(()=>{})});
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+start();
+</script>
+</body>
+</html>
