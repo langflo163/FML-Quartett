@@ -14,4 +14,6 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 
 ## Version
 
+v1.1 (29.10.2026): Preis-Hinweise (Richtwert usw.) nur bei „Kosten zeigen“; Preis ohne Wert = „—“.
+
 v1.0 (29.10.2026): Karten, Datenblatt, Kosten auf Knopfdruck, Token-Einrichtung, Offline-Stand.
