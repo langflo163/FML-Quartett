@@ -5,7 +5,7 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 
 - Live: https://langflo163.github.io/FML-Quartett/ (GitHub Pages, main / root)
 - Daten: privates Repo `langflo163/FML-Github` – Index `FML-Quartett/modelle.json` (Liste der RC-Ordner),
-  pro Modell `RC-…/quartett.json`, Foto als Datei im selben Ordner (Feld `foto` = Dateiname).
+  pro Modell `RC-…/quartett.json`, Fotos als Dateien im selben Ordner (Feld `fotos` = Liste der Dateinamen, erstes = Kartenfoto; altes Feld `foto` wird weiter gelesen).
 - Laden per GitHub-API (`contents`, Accept `application/vnd.github.raw+json`) mit Fine-grained-Token
   (nur FML-Github, Contents read-only), gespeichert in localStorage `fmlq.token`. Letzter Stand in `fmlq.cache`.
 - Eine Datei `index.html` (kein Build), `sw.js` cacht nur die App-Hülle. Bei Änderungen an der Hülle `V` in `sw.js` hochzählen.
@@ -13,6 +13,8 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 - Doku zu Datenformat und Pflege: `FML-Quartett/CLAUDE.md` im privaten Repo.
 
 ## Version
+
+v1.2 (02.11.2026): Mehrere Fotos pro Modell – Galerie im Datenblatt zum Wischen, Vollbild per Tipp, Zähler auf der Karte.
 
 v1.1 (29.10.2026): Preis-Hinweise (Richtwert usw.) nur bei „Kosten zeigen“; Preis ohne Wert = „—“.
 

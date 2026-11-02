@@ -94,8 +94,19 @@ button,input{font:inherit;color:inherit}
 .sbar .code{font-size:22px;padding:6px 10px;min-width:auto;border-radius:6px}
 .sbar h3{flex:1;margin:0;font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;line-height:1.05;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .swrap{max-width:720px;margin:0 auto;padding:14px var(--sr) 0 var(--sl);display:flex;flex-direction:column;gap:18px}
-.sphoto{border:2px solid var(--ink);border-radius:12px;overflow:hidden}
+.sphoto{border:2px solid var(--ink);border-radius:12px;overflow:hidden;position:relative}
 .sphoto .photo{border-bottom:0}
+.gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.gal::-webkit-scrollbar{display:none}
+.gal .photo{flex:none;width:100%;scroll-snap-align:start;cursor:zoom-in}
+.gcount{position:absolute;right:10px;bottom:10px;background:var(--ink);color:var(--card);font-family:var(--f-mono);font-size:12px;padding:3px 8px;border-radius:999px;pointer-events:none}
+.badge{position:absolute;right:8px;bottom:8px;background:var(--ink);color:var(--card);font-family:var(--f-mono);font-size:12px;padding:2px 8px;border-radius:999px}
+.lb{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column}
+.lb .gal{flex:1;height:100%}
+.lb .gal .photo{aspect-ratio:auto;height:100%;background:#000;border:0;cursor:default}
+.lb .gal img{object-fit:contain}
+.lb .lbbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:calc(8px + env(safe-area-inset-top,0px)) var(--sr) 8px var(--sl);color:#fff;font-family:var(--f-mono);font-size:13px;z-index:2}
+.lb .ibtn{border-color:#fff;color:#fff;background:rgba(0,0,0,.4)}
 .lead h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:32px;line-height:1;text-transform:uppercase;text-wrap:balance}
 .lead p{margin:4px 0 0;color:var(--muted)}
 .sec h4{margin:0 0 8px;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:1.2px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -163,6 +174,17 @@ const eur=n=>n==null?"—":n.toLocaleString("de-DE",{style:"currency",currency:"
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
 let models=[],filter=store.get("fmlq.filter")||"alle",openId=null,showCosts=false;
 const photoUrls={};
+const fotosOf=m=>(Array.isArray(m.fotos)&&m.fotos.length?m.fotos:(m.foto?[m.foto]:[])).map(f=>m._dir+"/"+f);
+let lbIdx=0;
+function loadPhoto(path){
+  if(photoUrls[path]!==undefined) return;
+  photoUrls[path]=null;
+  gh(path,"blob").then(b=>{photoUrls[path]=URL.createObjectURL(b);fillPhotos()}).catch(()=>{delete photoUrls[path]});
+}
+function fillPhotos(){
+  document.querySelectorAll("img[data-p]").forEach(img=>{const u=photoUrls[img.dataset.p];if(u&&img.getAttribute("src")!==u){img.src=u;img.hidden=false}});
+}
+function imgHTML(path,alt){const u=photoUrls[path];return `<img data-p="${esc(path)}" alt="${esc(alt)}"${u?` src="${u}"`:" hidden"}>`}
 
 async function gh(path,raw){
   const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${encodeURI(path)}`,{headers:{Authorization:"Bearer "+store.get("fmlq.token"),Accept:"application/vnd.github.raw+json","X-GitHub-Api-Version":"2022-11-28"},cache:"no-store"});
@@ -178,7 +200,7 @@ async function load(){
   models=list.filter(Boolean);
   store.set("fmlq.cache",JSON.stringify({t:Date.now(),models}));
   render(new Date());
-  models.forEach(m=>{ if(m.foto&&!photoUrls[m.id]) gh(m._dir+"/"+m.foto,"blob").then(b=>{photoUrls[m.id]=URL.createObjectURL(b);render()}).catch(()=>{}) });
+  models.forEach(m=>{const f=fotosOf(m);if(f[0])loadPhoto(f[0])});
 }
 function withCodes(list){
   const by={};
@@ -187,10 +209,25 @@ function withCodes(list){
     by[L]=(by[L]||0)+1; return {...m,code:L+by[L]};
   });
 }
+function phHTML(m,has){return `<div class="ph"><span class="big">${esc(m.code)}</span><small>${has?"Foto lädt":"Foto folgt"}</small></div>`}
 function photoHTML(m){
-  const u=photoUrls[m.id];
-  return `<div class="photo"><div class="ph"><span class="big">${esc(m.code)}</span><small>${m.foto?"Foto lädt":"Foto folgt"}</small></div>${u?`<img src="${u}" alt="${esc(m.name)}">`:""}</div>`;
+  const f=fotosOf(m);
+  return `<div class="photo">${phHTML(m,f.length)}${f[0]?imgHTML(f[0],m.name):""}${f.length>1?`<span class="badge">1/${f.length}</span>`:""}</div>`;
 }
+function galleryHTML(m){
+  const f=fotosOf(m);
+  if(f.length<2) return photoHTML(m).replace('class="photo"','class="photo" data-i="0"'+(f.length?"":' data-none="1"'));
+  return `<div class="gal" id="gal">${f.map((p,i)=>`<div class="photo" data-i="${i}">${phHTML(m,1)}${imgHTML(p,m.name+" – Foto "+(i+1))}</div>`).join("")}</div><span class="gcount" id="gcount">1/${f.length}</span>`;
+}
+function openLightbox(i){
+  const m=models.find(x=>x.id===openId);if(!m)return;const f=fotosOf(m);if(!f.length)return;
+  lbIdx=i;const lb=document.createElement("div");lb.className="lb";lb.id="lb";lb.setAttribute("role","dialog");lb.setAttribute("aria-modal","true");
+  lb.innerHTML=`<div class="lbbar"><span id="lbcount">${i+1}/${f.length}</span><button class="ibtn" id="lbclose">Schließen</button></div><div class="gal" id="lbgal">${f.map((p,j)=>`<div class="photo">${imgHTML(p,m.name+" – Foto "+(j+1))}</div>`).join("")}</div>`;
+  document.body.appendChild(lb);
+  const g=$("#lbgal");g.scrollLeft=i*g.clientWidth;
+  g.addEventListener("scroll",()=>{const k=Math.round(g.scrollLeft/g.clientWidth);$("#lbcount").textContent=`${k+1}/${f.length}`},{passive:true});
+}
+function closeLightbox(){const lb=$("#lb");if(lb)lb.remove()}
 function statRows(m,withSrc){
   return (m.werte||[]).map(w=>`<li><span class="k">${esc(w.label)}</span><span class="v${w.wert?"":" open"}">${esc(w.wert||"offen")}${withSrc&&w.quelle?`<span class="src">${esc(w.quelle)}</span>`:""}</span></li>`).join("");
 }
@@ -216,6 +253,7 @@ function render(when){
   if(openId) renderSheet();
 }
 function renderSheet(){
+  const og=$("#gal"),keep=og?og.scrollLeft:0;
   const m=withCodes(models).find(x=>x.id===openId); const s=$("#sheet");
   if(!m){closeSheet();return}
   const groups={};(m.komponenten||[]).forEach(k=>{(groups[k.gruppe||"Sonstiges"]??=[]).push(k)});
@@ -228,7 +266,7 @@ function renderSheet(){
   s.innerHTML=`
     <div class="sbar"><span class="code">${esc(m.code)}</span><h3>${esc(m.name)}</h3><button class="ibtn" id="close">Zurück</button></div>
     <div class="swrap">
-      <div class="sphoto">${photoHTML(m)}</div>
+      <div class="sphoto">${galleryHTML(m)}</div>
       <div class="lead"><h2>${esc(m.name)}</h2><p>${esc(KLABEL[m.kategorie]||"")} · ${esc(m.massstab||"")} · ${esc(m.untertitel||"")}</p></div>
       <div class="sec"><h4>Technische Daten</h4><div class="box"><ul class="stats">${statRows(m,true)}</ul></div></div>
       <div class="sec"><h4><span>Verbaute Komponenten</span><button class="toggle" id="costs" aria-pressed="${showCosts}">${showCosts?"Kosten ausblenden":"Kosten zeigen"}</button></h4>
@@ -236,8 +274,9 @@ function renderSheet(){
       ${(m.offen||[]).length?`<div class="sec"><h4>Noch offen</h4><div class="box"><ul class="notes">${m.offen.map(o=>`<li>${esc(o)}</li>`).join("")}</ul></div></div>`:""}
     </div>`;
   s.hidden=false;
+  const ng=$("#gal");if(ng&&keep){ng.scrollLeft=keep}
 }
-function openSheet(id){openId=id;showCosts=false;renderSheet();$("#sheet").scrollTop=0}
+function openSheet(id){openId=id;showCosts=false;renderSheet();$("#sheet").scrollTop=0;const m=models.find(x=>x.id===id);if(m)fotosOf(m).forEach(loadPhoto)}
 function closeSheet(){openId=null;$("#sheet").hidden=true}
 
 function showSetup(msg){
@@ -271,6 +310,8 @@ async function start(){
 document.addEventListener("click",e=>{
   const c=e.target.closest(".chip"); if(c){filter=c.dataset.k;store.set("fmlq.filter",filter);render();$("#deck").scrollLeft=0;return}
   const q=e.target.closest(".qcard"); if(q){openSheet(q.dataset.id);return}
+  if(e.target.closest("#lbclose")){closeLightbox();return}
+  const gp=e.target.closest(".sphoto .photo[data-i]"); if(gp&&!gp.dataset.none){openLightbox(+gp.dataset.i);return}
   if(e.target.closest("#close")){closeSheet();return}
   if(e.target.closest("#costs")){showCosts=!showCosts;renderSheet();return}
   if(e.target.closest("#reload")){start();return}
@@ -281,7 +322,8 @@ document.addEventListener("click",e=>{
     store.set("fmlq.token",t); start(); return
   }
 });
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&openId)closeSheet()});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if($("#lb"))closeLightbox();else if(openId)closeSheet()});
+document.addEventListener("scroll",e=>{const g=e.target;if(g&&g.id==="gal"){const n=g.children.length,k=Math.round(g.scrollLeft/g.clientWidth);const c=$("#gcount");if(c)c.textContent=`${k+1}/${n}`}},{capture:true,passive:true});
 $("#deck").addEventListener("scroll",()=>{
   const d=$("#deck"),cards=d.querySelectorAll(".qcard");if(!cards.length)return;
   const i=Math.round(d.scrollLeft/(cards[0].offsetWidth+14));
