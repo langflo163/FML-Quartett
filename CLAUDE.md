@@ -14,6 +14,8 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 
 ## Version
 
+v1.3 (02.11.2026): Video-Links (YouTube mit Vorschaubild, Instagram, TikTok, sonstige https-Links) im Datenblatt, Anzahl auf der Karte.
+
 v1.2 (02.11.2026): Mehrere Fotos pro Modell – Galerie im Datenblatt zum Wischen, Vollbild per Tipp, Zähler auf der Karte.
 
 v1.1 (29.10.2026): Preis-Hinweise (Richtwert usw.) nur bei „Kosten zeigen“; Preis ohne Wert = „—“.
