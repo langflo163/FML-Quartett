@@ -125,6 +125,11 @@ button,input{font:inherit;color:inherit}
 .costs-off .p,.costs-off .totalrow,.costs-off .pc{display:none}
 .totalrow{display:flex;justify-content:space-between;padding:10px 14px;border-top:2px solid var(--ink);font-family:var(--f-display);font-weight:800;font-size:18px;text-transform:uppercase}
 .totalrow span:last-child{font-family:var(--f-mono);font-size:16px;font-variant-numeric:tabular-nums}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.abtn{border:1.5px solid var(--ink);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 14px;font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.6px;text-transform:uppercase;cursor:pointer}
+.abtn.primary{background:var(--ink);color:var(--bg)}
+.abtn:disabled{opacity:.6;cursor:progress}
+.amsg{font-size:13px;color:var(--muted)}
 .toggle{border:1.5px solid var(--ink);background:var(--card);border-radius:999px;padding:3px 11px;font-family:var(--f-body);font-weight:600;font-size:12px;letter-spacing:0;text-transform:none;cursor:pointer}
 .toggle[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .notes{margin:0;padding:10px 14px;font-size:14px}
@@ -185,10 +190,11 @@ let models=[],filter=store.get("fmlq.filter")||"alle",openId=null,showCosts=fals
 const photoUrls={};
 const fotosOf=m=>(Array.isArray(m.fotos)&&m.fotos.length?m.fotos:(m.foto?[m.foto]:[])).map(f=>m._dir+"/"+f);
 let lbIdx=0;
+const photoProm={};
 function loadPhoto(path){
-  if(photoUrls[path]!==undefined) return;
+  if(photoProm[path]) return photoProm[path];
   photoUrls[path]=null;
-  gh(path,"blob").then(b=>{photoUrls[path]=URL.createObjectURL(b);fillPhotos()}).catch(()=>{delete photoUrls[path]});
+  return photoProm[path]=gh(path,"blob").then(b=>{photoUrls[path]=URL.createObjectURL(b);fillPhotos();return photoUrls[path]}).catch(()=>{delete photoUrls[path];delete photoProm[path];return null});
 }
 function fillPhotos(){
   document.querySelectorAll("img[data-p]").forEach(img=>{const u=photoUrls[img.dataset.p];if(u&&img.getAttribute("src")!==u){img.src=u;img.hidden=false}});
@@ -247,6 +253,36 @@ function openLightbox(i){
   const g=$("#lbgal");g.scrollLeft=i*g.clientWidth;
   g.addEventListener("scroll",()=>{const k=Math.round(g.scrollLeft/g.clientWidth);$("#lbcount").textContent=`${k+1}/${f.length}`},{passive:true});
 }
+let pdfFile=null;
+function loadScriptOnce(src){return new Promise((ok,bad)=>{if(document.querySelector(`script[src="${src}"]`))return ok();const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>bad(new Error("lib"));document.head.appendChild(s)})}
+async function sharePdf(){
+  if(!pdfFile)return;
+  if(navigator.canShare&&navigator.canShare({files:[pdfFile]})){
+    try{await navigator.share({files:[pdfFile],title:pdfFile.name});$("#pdfshare").hidden=true;$("#pdfmsg").textContent="";return}
+    catch(e){if(e&&e.name==="AbortError"){$("#pdfmsg").textContent="";return}
+      $("#pdfshare").hidden=false;$("#pdfmsg").textContent="PDF ist fertig – zum Teilen tippen.";return}
+  }
+  const u=URL.createObjectURL(pdfFile),a=document.createElement("a");a.href=u;a.download=pdfFile.name;a.target="_blank";document.body.appendChild(a);a.click();a.remove();
+  $("#pdfmsg").textContent="PDF wurde geöffnet.";
+}
+async function makePdf(costs,btn){
+  const m=withCodes(models).find(x=>x.id===openId);if(!m)return;
+  const btns=document.querySelectorAll("[data-pdf]");btns.forEach(b=>b.disabled=true);
+  const old=btn.textContent;btn.textContent="Wird erstellt …";$("#pdfmsg").textContent="";$("#pdfshare").hidden=true;
+  try{
+    await loadScriptOnce("pdf.js");
+    const paths=fotosOf(m);await Promise.all(paths.map(loadPhoto));
+    const urls=paths.map(p=>photoUrls[p]).filter(Boolean);
+    const blob=await window.fmlPdf.build({...m,_fotoUrls:urls},m.code,costs,urls[0]||null);
+    const slug=(m.name||"Modell").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    pdfFile=new File([blob],`FML-Quartett_${m.code}_${slug}${costs?"_mit-Kosten":""}.pdf`,{type:"application/pdf"});
+    btn.textContent=old;btns.forEach(b=>b.disabled=false);
+    await sharePdf();
+  }catch(e){
+    btn.textContent=old;btns.forEach(b=>b.disabled=false);
+    $("#pdfmsg").textContent=navigator.onLine===false?"Für das PDF wird eine Internetverbindung gebraucht.":"PDF konnte nicht erstellt werden. Bitte noch einmal versuchen.";
+  }
+}
 function closeLightbox(){const lb=$("#lb");if(lb)lb.remove()}
 function statRows(m,withSrc){
   return (m.werte||[]).map(w=>`<li><span class="k">${esc(w.label)}</span><span class="v${w.wert?"":" open"}">${esc(w.wert||"offen")}${withSrc&&w.quelle?`<span class="src">${esc(w.quelle)}</span>`:""}</span></li>`).join("");
@@ -288,6 +324,7 @@ function renderSheet(){
     <div class="swrap">
       <div class="sphoto">${galleryHTML(m)}</div>
       <div class="lead"><h2>${esc(m.name)}</h2><p>${esc(KLABEL[m.kategorie]||"")} · ${esc(m.massstab||"")} · ${esc(m.untertitel||"")}</p></div>
+      <div class="acts"><button class="abtn" data-pdf="0">PDF</button><button class="abtn" data-pdf="1">PDF mit Kosten</button><button class="abtn primary" id="pdfshare" hidden>PDF teilen</button><span class="amsg" id="pdfmsg" role="status"></span></div>
       <div class="sec"><h4>Technische Daten</h4><div class="box"><ul class="stats">${statRows(m,true)}</ul></div></div>
       <div class="sec"><h4><span>Verbaute Komponenten</span><button class="toggle" id="costs" aria-pressed="${showCosts}">${showCosts?"Kosten ausblenden":"Kosten zeigen"}</button></h4>
         <div class="box">${parts||'<p class="notes">Noch keine Komponenten erfasst.</p>'}<div class="totalrow"><span>Gesamt</span><span>${eur(sum)}</span></div></div></div>
@@ -332,6 +369,8 @@ document.addEventListener("click",e=>{
   const c=e.target.closest(".chip"); if(c){filter=c.dataset.k;store.set("fmlq.filter",filter);render();$("#deck").scrollLeft=0;return}
   const q=e.target.closest(".qcard"); if(q){openSheet(q.dataset.id);return}
   if(e.target.closest("#lbclose")){closeLightbox();return}
+  const pb=e.target.closest("[data-pdf]"); if(pb){makePdf(pb.dataset.pdf==="1",pb);return}
+  if(e.target.closest("#pdfshare")){sharePdf();return}
   const gp=e.target.closest(".sphoto .photo[data-i]"); if(gp&&!gp.dataset.none){openLightbox(+gp.dataset.i);return}
   if(e.target.closest("#close")){closeSheet();return}
   if(e.target.closest("#costs")){showCosts=!showCosts;renderSheet();return}
