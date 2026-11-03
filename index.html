@@ -219,7 +219,7 @@ button,input{font:inherit;color:inherit}
 <section class="sheet costs-off" id="sheet" hidden role="dialog" aria-modal="true"></section>
 
 <script>
-const APPV="1.8.1";
+const APPV="1.9";
 const REPO="langflo163/FML-Github", INDEX="FML-Quartett/modelle.json";
 const KATS=[["alle","Alle",""],["auto","Autos","A"],["flugzeug","Flugzeuge","F"],["boot","Boote","B"],["heli","Helis","H"]];
 const KLABEL={auto:"RC-Car",flugzeug:"Flugzeug",boot:"Boot",heli:"Hubschrauber"};
@@ -242,13 +242,43 @@ function fillPhotos(){
 }
 function imgHTML(path,alt){const u=photoUrls[path];return `<img data-p="${esc(path)}" alt="${esc(alt)}"${u?` src="${u}"`:" hidden"}>`}
 
-async function gh(path,raw){
-  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${encodeURI(path)}`,{headers:{Authorization:"Bearer "+store.get("fmlq.token"),Accept:"application/vnd.github.raw+json","X-GitHub-Api-Version":"2022-11-28"},cache:"no-store"});
-  if(!r.ok){const e=new Error("http");e.status=r.status;throw e}
-  return raw==="blob"?r.blob():r.json();
+// Offline-Speicher: jede geladene Datei (Daten, Fotos, Sender) landet zusätzlich im Cache des iPhones.
+const DATA_CACHE="fmlq-data",ckey=p=>"https://fmlq.cache/"+encodeURI(p);
+let offlineUsed=false;
+async function cacheGet(path,raw){
+  try{const c=await caches.open(DATA_CACHE);const r=await c.match(ckey(path));if(!r)return null;return raw==="blob"?r.blob():r.json()}catch(e){return null}
+}
+async function cachePut(path,body,type){
+  try{const c=await caches.open(DATA_CACHE);await c.put(ckey(path),new Response(body,{headers:{"Content-Type":type||"application/octet-stream"}}))}catch(e){}
+}
+async function gh(path,raw,onlyCache){
+  if(!onlyCache){
+    let r=null;
+    try{r=await fetch(`https://api.github.com/repos/${REPO}/contents/${encodeURI(path)}`,{headers:{Authorization:"Bearer "+store.get("fmlq.token"),Accept:"application/vnd.github.raw+json","X-GitHub-Api-Version":"2022-11-28"},cache:"no-store"})}
+    catch(e){r=null}
+    if(r&&r.ok){
+      if(raw==="blob"){const b=await r.blob();cachePut(path,b,b.type);return b}
+      const t=await r.text();cachePut(path,t,"application/json");return JSON.parse(t);
+    }
+    if(r&&(r.status===401||r.status===404)){const e=new Error("http");e.status=r.status;throw e}
+  }
+  const c=await cacheGet(path,raw);
+  if(c!=null){offlineUsed=true;return c}
+  const e=new Error("offline");e.status=0;throw e;
+}
+// Bei Internet alles für offline vorhalten (nur was noch fehlt; angesehene Fotos werden ohnehin neu geladen)
+async function prefetchAll(){
+  const paths=[];
+  models.forEach(m=>{fotosOf(m).forEach(p=>paths.push(p));const sd=senderOf(m);if(sd)paths.push("FML-Quartett/sender/"+sd.id+".json")});
+  for(const p of [...new Set(paths)]){
+    try{const c=await caches.open(DATA_CACHE);if(await c.match(ckey(p)))continue;await gh(p,p.endsWith(".json")?undefined:"blob")}catch(e){}
+  }
+  for(const id of Object.keys(senders)){const pr=senders[id];if(pr&&pr.foto){const p="FML-Quartett/sender/"+pr.foto;try{const c=await caches.open(DATA_CACHE);if(!(await c.match(ckey(p))))await gh(p,"blob")}catch(e){}}}
+  // App-Teile für das PDF (Service Worker speichert sie mit)
+  ["pdf.js","lib/jspdf.umd.min.js","lib/qrcode.js","fonts/SairaCondensed-ExtraBold.ttf","fonts/SairaCondensed-Bold.ttf","fonts/IBMPlexSans-Regular.ttf","fonts/IBMPlexMono-Regular.ttf"].forEach(u=>fetch(u).catch(()=>{}));
 }
 async function load(){
-  $("#count").textContent="Lädt …";
+  $("#count").textContent="Lädt …";offlineUsed=false;
   const idx=await gh(INDEX);
   const list=await Promise.all(idx.modelle.map(async dir=>{
     try{const m=await gh(dir+"/quartett.json");m._dir=dir;return m}catch(e){return null}
@@ -256,7 +286,9 @@ async function load(){
   models=list.filter(Boolean);
   store.set("fmlq.cache",JSON.stringify({t:Date.now(),models}));
   render(new Date());
+  if(offlineUsed){$("#count").textContent=`Offline · ${models.length} Karten (gespeicherter Stand)`;$("#stamp").textContent="App v"+APPV}
   models.forEach(m=>{const f=fotosOf(m);if(f[0])loadPhoto(f[0])});
+  if(!offlineUsed){const ids=[...new Set(models.map(m=>senderOf(m)).filter(Boolean).map(s=>s.id))];Promise.all(ids.map(loadSender)).then(()=>setTimeout(prefetchAll,500))}
 }
 function withCodes(list){
   const by={};
@@ -334,8 +366,10 @@ function senderHTML(m){
 // GitHub schreiben
 function b64utf8(str){const u8=new TextEncoder().encode(str);let s="";for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
 function utf8b64(b){const bin=atob(b.replace(/\n/g,""));const u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);return new TextDecoder().decode(u8)}
+async function fetchNet(u,o){try{return await fetch(u,o)}catch(x){const e=new Error("offline");e.status=0;throw e}}
 async function ghMeta(path){
-  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${encodeURI(path)}`,{headers:{Authorization:"Bearer "+store.get("fmlq.token"),Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},cache:"no-store"});
+  if(!navigator.onLine){const e=new Error("offline");e.status=0;throw e}
+  const r=await fetchNet(`https://api.github.com/repos/${REPO}/contents/${encodeURI(path)}`,{headers:{Authorization:"Bearer "+store.get("fmlq.token"),Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},cache:"no-store"});
   if(!r.ok){const e=new Error("http");e.status=r.status;throw e}
   const j=await r.json();return {sha:j.sha,data:JSON.parse(utf8b64(j.content))};
 }
@@ -356,6 +390,7 @@ async function saveModel(m,apply,msg){
 function saveErr(e){
   if(e&&(e.status===403||e.status===404))return "Speichern nicht erlaubt: Dein Token darf nur lesen. Auf GitHub beim Token „Contents“ auf „Read and write“ stellen.";
   if(e&&e.status===401)return "Der Token wird nicht mehr akzeptiert. Bitte neu eintragen.";
+  if(!navigator.onLine||(e&&e.status===0))return "Kein Internet – Speichern geht nur online.";
   return "Speichern hat nicht geklappt. Internet prüfen und noch einmal versuchen.";
 }
 function closeEditor(){const o=$("#ov");if(o)o.remove()}
@@ -542,7 +577,8 @@ async function start(){
   try{await load()}
   catch(e){
     if(e.status===401||e.status===404) showSetup(errText(e));
-    else {$("#count").textContent=models.length?"Offline – letzter Stand":"Offline";if(!models.length){$("#empty").hidden=false;$("#empty").textContent=errText(e)}}
+    else {$("#count").textContent=models.length?"Offline – letzter Stand":"Offline";if(!models.length){$("#empty").hidden=false;$("#empty").textContent=errText(e)}
+      models.forEach(m=>{const f=fotosOf(m);if(f[0])loadPhoto(f[0])})}
   }
 }
 

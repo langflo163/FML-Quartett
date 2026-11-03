@@ -16,6 +16,9 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 
 ## Version
 
+v1.9 (03.11.2026): Offline – alle Daten, Fotos, Sender-Profile/-Bilder landen im Cache `fmlq-data` (Cache Storage); bei Internet werden fehlende
+Dateien vorgeladen, PDF-Teile (pdf.js, lib, fonts) über den Service Worker. Offline geht alles außer Bearbeiten.
+
 v1.8.1 (03.11.2026): Geber-Typ `schalter3` (oben/mitte/unten, mit Startstellung).
 
 v1.8 (03.11.2026): Geber-Schilder zeigen die Original-Bezeichnung (`kurz` im Sender-Profil, z. B. Sa, SF, trim 3-4) statt der Nummer – im Bild, in der Liste, im Editor und im PDF.
