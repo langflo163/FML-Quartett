@@ -53,18 +53,24 @@
     for (const [f, n, st, data] of await fonts()) { doc.addFileToVFS(f, data); doc.addFont(f, n, st); }
     const set = (font, style, size, col) => { doc.setFont(font, style); doc.setFontSize(size); doc.setTextColor(...(col || INK)); };
     const lh = size => size * 0.3528 * 1.25;
+    // Regel: kein Text darf über seinen Platz hinauslaufen – entweder umbrechen oder mit „…“ kürzen.
+    const fitLine = (t, maxW) => { t = String(t || ""); if (doc.getTextWidth(t) <= maxW) return t; while (t.length > 1 && doc.getTextWidth(t + "…") > maxW) t = t.slice(0, -1); return t.trimEnd() + "…"; };
     const today = new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 
     // Kopf
     doc.setFillColor(...RED); doc.rect(0, 0, W, 30, "F");
     doc.setFillColor(...INK); doc.rect(0, 0, 30, 30, "F");
     set("Saira", "bold", 30, [255, 255, 255]); doc.text(code, 15, 18.5, { align: "center", baseline: "middle" });
-    let ts = 24; set("Saira", "bold", ts, [255, 255, 255]);
+    const TW = 140; let ts = 24; set("Saira", "bold", ts, [255, 255, 255]);
     const title = (m.name || "").toUpperCase();
-    while (doc.getTextWidth(title) > 140 && ts > 14) { ts -= 1; doc.setFontSize(ts); }
-    doc.text(title, 36, 15);
-    set("Saira", "normal", 9.5, [255, 255, 255]);
-    doc.text([KLABEL[m.kategorie] || "", m.massstab || "", m.untertitel || ""].filter(Boolean).join(" · ").toUpperCase(), 36, 22.5, { maxWidth: 140 });
+    while (doc.getTextWidth(title) > TW && ts > 15) { ts -= 1; doc.setFontSize(ts); }
+    let tl0 = doc.splitTextToSize(title, TW);
+    if (tl0.length > 1) { ts = 14; doc.setFontSize(ts); tl0 = doc.splitTextToSize(title, TW).slice(0, 2); tl0[1] = fitLine(tl0[1], TW); doc.text(tl0, 36, 10.5); }
+    else doc.text(title, 36, 15);
+    let ss = 9.5; set("Saira", "normal", ss, [255, 255, 255]);
+    const sub0 = [KLABEL[m.kategorie] || "", m.massstab || "", m.untertitel || ""].filter(Boolean).join(" · ").toUpperCase();
+    while (doc.getTextWidth(sub0) > TW && ss > 7.5) { ss -= 0.5; doc.setFontSize(ss); }
+    doc.text(fitLine(sub0, TW), 36, tl0.length > 1 ? 25 : 22.5);
     try { doc.addImage(await pngData("icons/icon-180.png"), "PNG", 181, 6, 18, 18); } catch (e) {}
 
     // Foto + Technische Daten
@@ -83,15 +89,15 @@
       if (i) { doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(cx, ty - 3.6, R, ty - 3.6); }
       // Label links, Wert rechts – der Wert wird umbrochen, damit er nie ins Label oder Foto läuft
       set("Plex", "normal", 6.8, MUTED); const lab = (w.label || "").toUpperCase();
-      const labW = Math.min(doc.getTextWidth(lab), cw * 0.45); doc.text(doc.splitTextToSize(lab, cw * 0.45)[0], cx, ty);
+      const labL = doc.splitTextToSize(lab, cw * 0.45), labW = Math.max(...labL.map(x => doc.getTextWidth(x)), 0); doc.text(labL, cx, ty);
       let vs = 9.5; set("PlexMono", "normal", vs, w.wert ? INK : MUTED);
       const vw = cw - labW - 3; let val = doc.splitTextToSize(w.wert || "offen", vw);
       if (val.length > 1) { vs = 8.2; doc.setFontSize(vs); val = doc.splitTextToSize(w.wert || "offen", vw); }
       doc.text(val, R, ty, { align: "right" });
-      let h = 5.2 + (val.length - 1) * lh(vs);
+      let h = 5.2 + Math.max((val.length - 1) * lh(vs), (labL.length - 1) * lh(6.8));
       if (w.quelle) {
         set("Plex", "normal", 6.2, MUTED); const q = doc.splitTextToSize(w.quelle, cw - 10);
-        doc.text(q, R, ty + 3.4 + (val.length - 1) * lh(vs), { align: "right" }); h += q.length * lh(6.2);
+        doc.text(q, R, ty + 3.4 + Math.max((val.length - 1) * lh(vs), (labL.length - 1) * lh(6.8)), { align: "right" }); h += q.length * lh(6.2);
       }
       ty += h + 1.6;
     });
@@ -116,7 +122,7 @@
     let total = 0;
     for (const [g, ks] of Object.entries(groups)) {
       ensure(14); y += 2.5;
-      set("Saira", "normal", 8.5, RED); doc.text(g.toUpperCase(), L, y + 2.8); y += 4.5;
+      set("Saira", "normal", 8.5, RED); doc.text(fitLine(g.toUpperCase(), R - L), L, y + 2.8); y += 4.5;
       ks.forEach((k, idx) => {
         const n = k.menge || 1; if (k.preis) total += k.preis * n;
         let hints = String(k.hinweis || "").split(/\s*·\s*/).filter(Boolean);
@@ -160,14 +166,17 @@
         if (sd.modellspeicher) items.push(["M", `Modellspeicher „${sd.modellspeicher}“ wählen`, ""]);
         hints.forEach(h => items.push(["!", h, ""]));
         items.forEach(([n, t, r], i) => {
-          set("Plex", "normal", 8.6); const tl = doc.splitTextToSize(t, 120); const h = tl.length * lh(8.6) + 2.6;
+          set("Saira", "bold", 8); const nw0 = Math.max(5.2, doc.getTextWidth(n) + 2.6);
+          set("Saira", "bold", 9.5); const rl = r ? doc.splitTextToSize(r, 62) : [], rW = rl.length ? Math.max(...rl.map(x => doc.getTextWidth(x))) : 0;
+          set("Plex", "normal", 8.6); const tl = doc.splitTextToSize(t, R - (L + nw0 + 4) - (rW ? rW + 5 : 0));
+          const h = Math.max(tl.length * lh(8.6), rl.length * lh(9.5)) + 2.6;
           ensure(h);
           if (i) { doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(L, y, R, y); }
           set("Saira", "bold", 8, [255, 255, 255]); const nw = Math.max(5.2, doc.getTextWidth(n) + 2.6);
           doc.setFillColor(...(n === "M" || n === "!" ? INK : RED)); doc.roundedRect(L + 0.4, y + 0.6, nw, 5.2, 2.6, 2.6, "F");
           set("Saira", "bold", 8, [255, 255, 255]); doc.text(n, L + 0.4 + nw / 2, y + 3.3, { align: "center", baseline: "middle" });
           set("Plex", "normal", 8.6); doc.text(tl, L + nw + 4, y + 4.1);
-          if (r) { set("Saira", "bold", 9.5, RED); doc.text(r, R, y + 4.1, { align: "right" }); }
+          if (rl.length) { set("Saira", "bold", 9.5, RED); doc.text(rl, R, y + 4.1, { align: "right" }); }
           y += h;
         });
         doc.setDrawColor(...RED); doc.setLineWidth(0.6); doc.line(L, y, R, y);
@@ -175,7 +184,7 @@
       if (used.length) {
         const iw = 62, ih = iw * S.prof.hoehe / S.prof.breite;
         y += 8; ensure(Math.min(ih, 60) + 10);
-        set("Saira", "normal", 11.5); doc.text("FERNSTEUERUNG · " + S.prof.name.toUpperCase(), L, y);
+        set("Saira", "normal", 11.5); doc.text(fitLine("FERNSTEUERUNG · " + S.prof.name.toUpperCase(), R - L), L, y);
         doc.setDrawColor(...INK); doc.setLineWidth(0.6); doc.line(L, y + 2, R, y + 2); y += 5;
         if (y + ih > BOTTOM) { newPage(); }
         const top = y;
@@ -196,16 +205,17 @@
         let ly2 = top + 3; const tx0 = L + iw + 8, tw = R - tx0 - 8;
         used.forEach((g, i) => {
           const b = bel[g.id];
-          set("Plex", "normal", 8.6); const fl = doc.splitTextToSize(b.funktion, tw);
+          const bt = String(g.kurz || g.nr); set("Saira", "bold", 8); const bw = Math.max(5.2, doc.getTextWidth(bt) + 2.6); const tw2 = R - (tx0 + bw + 3);
+          set("Plex", "normal", 8.6); const fl = doc.splitTextToSize(b.funktion, tw2);
           const sub = [g.name];
           const stl = Array.isArray(b.stellungen) ? b.stellungen.filter(x => x && x.text) : ["oben", "unten"].filter(k => b[k]).map(k => ({ name: k, text: b[k] }));
           stl.forEach(x => sub.push(x.name + " = " + x.text + (b.start === x.name ? " (Start)" : "")));
           if (b.notiz) sub.push(b.notiz);
-          set("Plex", "normal", 6.6); const sl = doc.splitTextToSize(sub.join(" · "), tw);
+          set("Plex", "normal", 6.6); const sl = doc.splitTextToSize(sub.join(" · "), tw2);
           const h = fl.length * lh(8.6) + sl.length * lh(6.6) + 2.4;
           if (ly2 + h > BOTTOM) { doc.addPage(); ly2 = 16; }
           if (i) { doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(tx0 - 1, ly2 - 2.6, R, ly2 - 2.6); }
-          const bt = String(g.kurz || g.nr); set("Saira", "bold", 8, [255, 255, 255]); const bw = Math.max(5.2, doc.getTextWidth(bt) + 2.6);
+          set("Saira", "bold", 8, [255, 255, 255]);
           doc.setFillColor(...RED); doc.roundedRect(tx0, ly2 - 2.4, bw, 5.2, 2.6, 2.6, "F");
           doc.text(bt, tx0 + bw / 2, ly2 + 0.3, { align: "center", baseline: "middle" });
           set("Plex", "normal", 8.6); doc.text(fl, tx0 + bw + 3, ly2 + 1.2);
@@ -237,23 +247,24 @@
       doc.setDrawColor(...INK); doc.setLineWidth(0.6); doc.line(L, y + 2, R, y + 2); y += 5;
       vids.forEach((v, i) => {
         const per = Math.floor((R - L + gap) / (q + gap));
-        if (i && i % per === 0) { y += q + 13; ensure(q + 12); }
+        if (i && i % per === 0) { y += q + 15; ensure(q + 14); }
         const x = L + (i % per) * (q + gap);
         const qr = qrcode(0, "M"); qr.addData(v.url); qr.make();
         const n = qr.getModuleCount(), c = q / n; doc.setFillColor(...INK);
         for (let r = 0; r < n; r++) for (let cc = 0; cc < n; cc++) if (qr.isDark(r, cc)) doc.rect(x + cc * c, y + r * c, c + 0.02, c + 0.02, "F");
         const src = /youtu/.test(v.url) ? "YOUTUBE" : /instagram/.test(v.url) ? "INSTAGRAM" : /tiktok/.test(v.url) ? "TIKTOK" : "VIDEO";
         set("Saira", "normal", 7.5, RED); doc.text(src, x + q / 2, y + q + 3.6, { align: "center" });
-        set("Plex", "normal", 6.5); doc.text(doc.splitTextToSize(v.titel || "Video " + (i + 1), q + 4)[0], x + q / 2, y + q + 6.6, { align: "center" });
+        set("Plex", "normal", 6.5); const vt0 = doc.splitTextToSize(v.titel || "Video " + (i + 1), q + 4), vt = vt0.slice(0, 2); if (vt0.length > 2) vt[1] = fitLine(vt[1] + " …", q + 4);
+        doc.text(vt, x + q / 2, y + q + 6.6, { align: "center" });
       });
-      y += q + 8;
+      y += q + 11;
     }
 
     // Fußzeile
     const pages = doc.getNumberOfPages();
     for (let p = 1; p <= pages; p++) {
       doc.setPage(p); set("Plex", "normal", 6.5, MUTED);
-      doc.text(`FML Quartett · ${m.name} · Stand ${today}`, L, H - 8);
+      doc.text(fitLine(`FML Quartett · ${m.name} · Stand ${today}`, R - L - 22), L, H - 8);
       doc.text(`Seite ${p}/${pages}`, R, H - 8, { align: "right" });
     }
     return doc.output("blob");

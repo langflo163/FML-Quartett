@@ -11,10 +11,16 @@ Commits nur mit `langflo163@users.noreply.github.com`.
   neuesten Stand anwenden → PUT (bei 409 einmal neu versuchen), gespeichert in localStorage `fmlq.token`. Letzter Stand in `fmlq.cache`.
 - App-Version: `APPV` in `index.html` (wird in der Statuszeile angezeigt) – bei jeder Änderung hochzählen, dazu `V` in `sw.js`.
 - `index.html` (kein Build) + `pdf.js` (PDF-Export, lädt erst bei Bedarf `lib/jspdf.umd.min.js` 2.5.1, `lib/qrcode.js` 1.4.4 und die TTF-Schriften aus `fonts/`), `sw.js` cacht nur die App-Hülle. Bei Änderungen an der Hülle `V` in `sw.js` hochzählen.
+- **Texte dürfen nie überlaufen** (Wunsch Flo): in der App bricht alles um (`overflow-wrap:anywhere` auf body, `min-width:0` in Flex/Grid),
+  im PDF jede Textstelle mit `splitTextToSize` umbrechen oder mit `fitLine` (…) kürzen; Spalten nebeneinander bekommen feste Breiten.
+  Nach Änderungen am Layout: PDFs aller Modelle + ein Stress-Modell mit extrem langen Texten erzeugen und ansehen.
 - Optik: flach, Rot/Weiß/Schwarz, keine Verläufe. Schriften Saira Condensed / IBM Plex Sans / IBM Plex Mono.
 - Doku zu Datenformat und Pflege: `FML-Quartett/CLAUDE.md` im privaten Repo.
 
 ## Version
+
+v1.9.2 (03.11.2026): Alle Texte gegen Überlaufen abgesichert – PDF (Titel 2-zeilig, Untertitel/Gruppen/Fußzeile mit „…“, Labels und Werte
+umbrechen, „Vor dem Einschalten“ mit eigener Spalte, Video-Titel 2 Zeilen) und App (lange Wörter brechen um). Mit Stress-Modell geprüft.
 
 v1.9.1 (03.11.2026): PDF – lange Werte bei „Technische Daten“ werden umbrochen (liefen vorher über Label und Foto).
 
