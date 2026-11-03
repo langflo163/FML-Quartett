@@ -180,8 +180,8 @@
             used.forEach(g => {
               const [tx, ty] = g.ziel, [lx, ly] = g.label || g.ziel;
               x.strokeStyle = "#D3202A"; x.lineWidth = 3; if (g.label) { x.beginPath(); x.moveTo(lx, ly); x.lineTo(tx, ty); x.stroke(); }
-              x.fillStyle = "#D3202A"; x.strokeStyle = "#fff"; x.lineWidth = 3; x.beginPath(); x.arc(lx, ly, 21, 0, 7); x.fill(); x.stroke();
-              x.fillStyle = "#fff"; x.font = "800 24px 'Saira Condensed', Arial Narrow, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(g.nr), lx, ly + 1);
+              x.fillStyle = "#D3202A"; x.strokeStyle = "#fff"; x.lineWidth = 3; const RR = Math.round(S.prof.breite * 0.028); x.beginPath(); x.arc(lx, ly, RR, 0, 7); x.fill(); x.stroke();
+              x.fillStyle = "#fff"; x.font = "800 " + Math.round(RR * 1.15) + "px 'Saira Condensed', Arial Narrow, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(g.nr), lx, ly + 1);
             });
             doc.addImage(c.toDataURL("image/jpeg", 0.88), "JPEG", L, top, iw, ih);
           } catch (e) {}

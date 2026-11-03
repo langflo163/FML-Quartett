@@ -16,6 +16,8 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 
 ## Version
 
+v1.7 (03.11.2026): Geber-Typen knueppel (oben/unten/links/rechts), drehknopf (links/rechts), schieber (oben/unten) für die Jeti DC-16.
+
 v1.6 (03.11.2026): Jeder Geber hat frei benennbare Stellungen mit Beschreibung (Vorgaben je Typ: Rad links/rechts, Hebel ziehen/drücken,
 Taster gedrückt, Schalter oben/unten, Wippe Stellung 1/2), „+ Stellung“; Startstellung bei Schaltern. Versionsnummer in der Statuszeile.
 Service Worker lädt mit `cache: no-cache` (GitHub Pages cacht sonst bis 10 min).
