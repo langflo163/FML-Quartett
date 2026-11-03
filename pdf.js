@@ -96,7 +96,8 @@
     const cols = costs
       ? [{ x: L, w: 92 }, { x: 107, w: 32 }, { x: 142, w: 32 }, { x: R, w: 22, right: true }]
       : [{ x: L, w: 104 }, { x: 119, w: 36 }, { x: 158, w: 40 }];
-    const newPage = () => { doc.addPage(); y = 16; head(); };
+    let inTable = true;
+    const newPage = () => { doc.addPage(); y = 16; if (inTable) head(); };
     const ensure = h => { if (y + h > BOTTOM) newPage(); };
     function head() {
       set("Plex", "normal", 6.3, MUTED);
@@ -135,6 +136,75 @@
       ensure(10); doc.setDrawColor(...INK); doc.setLineWidth(0.6); doc.line(L, y + 1, R, y + 1);
       set("Saira", "bold", 11); doc.text("GESAMT", L, y + 6.5);
       set("PlexMono", "normal", 9.5); doc.text(eur(total), R, y + 6.5, { align: "right" }); y += 9;
+    }
+
+    inTable = false;
+    // Fernsteuerung: Startstellung + Belegung (nur belegte Geber)
+    const S = m._sender, sd = m.sender;
+    if (S && sd) {
+      const bel = sd.belegung || {}, used = S.prof.geber.filter(g => bel[g.id] && bel[g.id].funktion);
+      const starts = used.filter(g => bel[g.id].start === "oben" || bel[g.id].start === "unten");
+      const hints = sd.hinweise || [];
+      if (starts.length || hints.length || sd.modellspeicher) {
+        y += 8; ensure(20);
+        doc.setFillColor(...RED); doc.rect(L, y - 4.5, R - L, 7, "F");
+        set("Saira", "bold", 10.5, [255, 255, 255]); doc.text("VOR DEM EINSCHALTEN", L + 3, y + 0.4);
+        y += 6;
+        const items = starts.map(g => [String(g.nr), `${g.name}${bel[g.id].funktion ? " · " + bel[g.id].funktion : ""}`, `${bel[g.id].start.toUpperCase()}${bel[g.id][bel[g.id].start] ? " = " + bel[g.id][bel[g.id].start] : ""}`]);
+        if (sd.modellspeicher) items.push(["M", `Modellspeicher „${sd.modellspeicher}“ wählen`, ""]);
+        hints.forEach(h => items.push(["!", h, ""]));
+        items.forEach(([n, t, r], i) => {
+          set("Plex", "normal", 8.6); const tl = doc.splitTextToSize(t, 120); const h = tl.length * lh(8.6) + 2.6;
+          ensure(h);
+          if (i) { doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(L, y, R, y); }
+          doc.setFillColor(...(/^\d+$/.test(n) ? RED : INK)); doc.circle(L + 3, y + 3.2, 2.6, "F");
+          set("Saira", "bold", 8, [255, 255, 255]); doc.text(n, L + 3, y + 3.3, { align: "center", baseline: "middle" });
+          set("Plex", "normal", 8.6); doc.text(tl, L + 8, y + 4.1);
+          if (r) { set("Saira", "bold", 9.5, RED); doc.text(r, R, y + 4.1, { align: "right" }); }
+          y += h;
+        });
+        doc.setDrawColor(...RED); doc.setLineWidth(0.6); doc.line(L, y, R, y);
+      }
+      if (used.length) {
+        const iw = 62, ih = iw * S.prof.hoehe / S.prof.breite;
+        y += 8; ensure(Math.min(ih, 60) + 10);
+        set("Saira", "normal", 11.5); doc.text("FERNSTEUERUNG · " + S.prof.name.toUpperCase(), L, y);
+        doc.setDrawColor(...INK); doc.setLineWidth(0.6); doc.line(L, y + 2, R, y + 2); y += 5;
+        if (y + ih > BOTTOM) { newPage(); }
+        const top = y;
+        if (S.img) {
+          try {
+            const i = await img(S.img), c = document.createElement("canvas"); c.width = S.prof.breite; c.height = S.prof.hoehe;
+            const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(i, 0, 0, c.width, c.height);
+            used.forEach(g => {
+              const [tx, ty] = g.ziel, [lx, ly] = g.label || g.ziel;
+              x.strokeStyle = "#D3202A"; x.lineWidth = 3; if (g.label) { x.beginPath(); x.moveTo(lx, ly); x.lineTo(tx, ty); x.stroke(); }
+              x.fillStyle = "#D3202A"; x.strokeStyle = "#fff"; x.lineWidth = 3; x.beginPath(); x.arc(lx, ly, 21, 0, 7); x.fill(); x.stroke();
+              x.fillStyle = "#fff"; x.font = "800 24px 'Saira Condensed', Arial Narrow, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(g.nr), lx, ly + 1);
+            });
+            doc.addImage(c.toDataURL("image/jpeg", 0.88), "JPEG", L, top, iw, ih);
+          } catch (e) {}
+        }
+        let ly2 = top + 3; const tx0 = L + iw + 8, tw = R - tx0 - 8;
+        used.forEach((g, i) => {
+          const b = bel[g.id];
+          set("Plex", "normal", 8.6); const fl = doc.splitTextToSize(b.funktion, tw);
+          const sub = [g.name];
+          if (b.oben) sub.push("oben = " + b.oben + (b.start === "oben" ? " (Start)" : ""));
+          if (b.unten) sub.push("unten = " + b.unten + (b.start === "unten" ? " (Start)" : ""));
+          if (b.notiz) sub.push(b.notiz);
+          set("Plex", "normal", 6.6); const sl = doc.splitTextToSize(sub.join(" · "), tw);
+          const h = fl.length * lh(8.6) + sl.length * lh(6.6) + 2.4;
+          if (ly2 + h > BOTTOM) { doc.addPage(); ly2 = 16; }
+          if (i) { doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(tx0 - 1, ly2 - 2.6, R, ly2 - 2.6); }
+          doc.setFillColor(...RED); doc.circle(tx0 + 2.4, ly2 + 0.2, 2.6, "F");
+          set("Saira", "bold", 8, [255, 255, 255]); doc.text(String(g.nr), tx0 + 2.4, ly2 + 0.3, { align: "center", baseline: "middle" });
+          set("Plex", "normal", 8.6); doc.text(fl, tx0 + 8, ly2 + 1.2);
+          set("Plex", "normal", 6.6, MUTED); doc.text(sl, tx0 + 8, ly2 + 1.2 + fl.length * lh(8.6));
+          ly2 += h + 1.6;
+        });
+        y = doc.getCurrentPageInfo().pageNumber === doc.getNumberOfPages() ? Math.max(top + ih, ly2) : ly2;
+      }
     }
 
     // Weitere Fotos

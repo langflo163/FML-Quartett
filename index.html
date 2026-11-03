@@ -125,6 +125,41 @@ button,input{font:inherit;color:inherit}
 .costs-off .p,.costs-off .totalrow,.costs-off .pc{display:none}
 .totalrow{display:flex;justify-content:space-between;padding:10px 14px;border-top:2px solid var(--ink);font-family:var(--f-display);font-weight:800;font-size:18px;text-transform:uppercase}
 .totalrow span:last-child{font-family:var(--f-mono);font-size:16px;font-variant-numeric:tabular-nums}
+.chk{border:2px solid var(--red);border-radius:12px;background:var(--card);overflow:hidden}
+.chk .hd{white-space:nowrap;background:var(--red);color:#fff;font-family:var(--f-display);font-weight:800;font-size:17px;letter-spacing:1px;text-transform:uppercase;padding:7px 14px;display:flex;justify-content:space-between;gap:10px}
+.crow{display:flex;align-items:center;gap:12px;padding:9px 14px;border-top:1px solid var(--line)}
+.crow:first-of-type{border-top:0}
+.nb{flex:none;width:26px;height:26px;border-radius:50%;background:var(--red);color:#fff;font-family:var(--f-display);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+.nb.k{background:var(--ink)}.nb.off{background:var(--line);color:var(--muted)}
+.crow .t{flex:1;min-width:0}.crow .t b{display:block;font-weight:600;font-size:14px}.crow .t span{font-size:12.5px;color:var(--muted)}
+.swi{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--f-display);font-weight:700;font-size:12px;text-transform:uppercase}
+.swi svg{width:22px;height:34px}
+.spic{position:relative;background:#fff;width:100%}
+.spic img{display:block;width:100%;height:auto}
+.spic svg{position:absolute;inset:0;width:100%;height:100%}
+.spic .hit{cursor:pointer}
+.grow{display:grid;grid-template-columns:26px 1fr;gap:4px 10px;padding:9px 14px;border-top:1px solid var(--line);cursor:pointer;width:100%;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;font:inherit;color:inherit}
+.grow .g{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.grow .f{font-weight:600}.grow .f.nf{font-weight:400;color:var(--muted)}
+.grow .s{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:1px 9px;background:var(--bg)}
+.pill.st{border-color:var(--red);color:var(--red);font-weight:600;background:var(--card)}
+.grow .nt{grid-column:2;font-size:12.5px;color:var(--muted)}
+.ebtn{border:1.5px solid var(--ink);background:var(--card);border-radius:999px;padding:3px 11px;font-family:var(--f-body);font-weight:600;font-size:12px;letter-spacing:0;text-transform:none;cursor:pointer}
+.ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.esh{width:100%;max-width:560px;max-height:92%;overflow-y:auto;background:var(--card);border-radius:16px 16px 0 0;padding:16px var(--sr) calc(20px + env(safe-area-inset-bottom,0px)) var(--sl);display:flex;flex-direction:column;gap:10px}
+.esh .top{display:flex;align-items:center;gap:10px}
+.esh .top b{flex:1;font-family:var(--f-display);font-weight:800;font-size:20px;text-transform:uppercase;line-height:1.1}
+.esh label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.esh input,.esh textarea{width:100%;border:2px solid var(--ink);border-radius:10px;padding:9px 12px;font:inherit;font-size:16px;background:var(--card);color:var(--ink)}
+.esh textarea{min-height:84px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--ink);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--card);padding:9px 4px;font-family:var(--f-display);font-weight:700;font-size:15px;text-transform:uppercase;cursor:pointer;color:var(--ink)}
+.seg button+button{border-left:2px solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--red);color:#fff}
+.ebtns{display:flex;gap:10px;margin-top:4px}.ebtns button{flex:1}
+.emsg{font-size:13px;color:var(--red);min-height:1em}
 .acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .abtn{border:1.5px solid var(--ink);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 14px;font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.6px;text-transform:uppercase;cursor:pointer}
 .abtn.primary{background:var(--ink);color:var(--bg)}
@@ -253,6 +288,118 @@ function openLightbox(i){
   const g=$("#lbgal");g.scrollLeft=i*g.clientWidth;
   g.addEventListener("scroll",()=>{const k=Math.round(g.scrollLeft/g.clientWidth);$("#lbcount").textContent=`${k+1}/${f.length}`},{passive:true});
 }
+// ---- Fernsteuerung (Sender-Profil + Belegung pro Modell) ----
+const senders={},senderImg={};
+const senderOf=m=>m&&m.sender&&m.sender.id?m.sender:null;
+async function loadSender(id){
+  if(senders[id]) return senders[id];
+  try{senders[id]=await gh("FML-Quartett/sender/"+id+".json");
+    gh("FML-Quartett/sender/"+senders[id].foto,"blob").then(b=>{senderImg[id]=URL.createObjectURL(b);if(openId)renderSheet()}).catch(()=>{});
+  }catch(e){senders[id]=null}
+  return senders[id];
+}
+const swIcon=pos=>`<svg viewBox="0 0 22 34" aria-hidden="true"><rect x="5" y="3" width="12" height="28" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="11" cy="${pos==="oben"?10:24}" r="4.5" fill="#D3202A"/></svg>`;
+function checkHTML(m){
+  const sd=senderOf(m);if(!sd)return "";const prof=senders[sd.id];const bel=sd.belegung||{};
+  const rows=[];
+  if(prof) prof.geber.forEach(g=>{const b=bel[g.id];if(b&&(b.start==="oben"||b.start==="unten")){
+    const txt=b[b.start]||"";rows.push(`<div class="crow"><span class="nb">${g.nr}</span><div class="t"><b>${esc(g.name)}${b.funktion?" · "+esc(b.funktion):""}</b>${txt?`<span>${esc(b.start)} = ${esc(txt)}</span>`:""}</div><div class="swi">${swIcon(b.start)}${esc(b.start)}</div></div>`)}});
+  if(sd.modellspeicher) rows.push(`<div class="crow"><span class="nb k">M</span><div class="t"><b>Modellspeicher „${esc(sd.modellspeicher)}“</b><span>auf der ${esc(prof?prof.name:"Fernsteuerung")} wählen</span></div></div>`);
+  (sd.hinweise||[]).forEach(h=>rows.push(`<div class="crow"><span class="nb k">!</span><div class="t"><b>${esc(h)}</b></div></div>`));
+  if(!rows.length) return "";
+  return `<div class="chk"><div class="hd"><span>Vor dem Einschalten</span><span>${rows.length} ${rows.length===1?"Punkt":"Punkte"}</span></div>${rows.join("")}</div>`;
+}
+function senderHTML(m){
+  const sd=senderOf(m);if(!sd)return "";const prof=senders[sd.id];
+  if(prof===undefined){loadSender(sd.id).then(()=>{if(openId===m.id)renderSheet()});return `<div class="sec"><h4>Fernsteuerung</h4><div class="box"><p class="notes">Lädt …</p></div></div>`}
+  if(!prof) return "";
+  const bel=sd.belegung||{};
+  const lines=prof.geber.map(g=>{const on=!!(bel[g.id]&&bel[g.id].funktion);const c=on?"#D3202A":"#9C9895";const [x,y]=g.ziel;const [lx,ly]=g.label||g.ziel;
+    return (g.label?`<line x1="${lx}" y1="${ly}" x2="${x}" y2="${y}" stroke="${c}" stroke-width="3"/><circle cx="${x}" cy="${y}" r="6" fill="${c}" stroke="#fff" stroke-width="2"/>`:"")
+      +`<g class="hit" data-geber="${g.id}"><circle cx="${lx}" cy="${ly}" r="30" fill="transparent"/><circle cx="${lx}" cy="${ly}" r="21" fill="${c}" stroke="#fff" stroke-width="3"/><text x="${lx}" y="${ly+1}" text-anchor="middle" dominant-baseline="middle" font-family="Saira Condensed,Arial Narrow,sans-serif" font-weight="800" font-size="24" fill="#fff">${g.nr}</text></g>`}).join("");
+  const rows=prof.geber.map(g=>{const b=bel[g.id]||{};const sw=g.typ==="schalter";
+    const st=sw?["oben","unten"].filter(k=>b[k]).map(k=>`<span class="pill${b.start===k?" st":""}">${k} = ${esc(b[k])}${b.start===k?" · Start":""}</span>`).join(""):"";
+    return `<button class="grow" data-geber="${g.id}"><span class="nb${b.funktion?"":" off"}">${g.nr}</span><div><div class="g">${esc(g.name)}${sw?" · Schalter":""}</div><div class="f${b.funktion?"":" nf"}">${b.funktion?esc(b.funktion):"antippen zum Eintragen"}</div></div>${st?`<div class="s">${st}</div>`:""}${b.notiz?`<div class="nt">${esc(b.notiz)}</div>`:""}</button>`}).join("");
+  return `<div class="sec"><h4><span>Fernsteuerung</span><button class="ebtn" id="sedit">Modellspeicher &amp; Hinweise</button></h4>
+    <div class="box"><div class="spic">${senderImg[sd.id]?`<img src="${senderImg[sd.id]}" alt="${esc(prof.name)}">`:`<div style="aspect-ratio:${prof.breite}/${prof.hoehe}"></div>`}<svg viewBox="0 0 ${prof.breite} ${prof.hoehe}">${lines}</svg></div>
+    <p class="notes" style="padding:8px 14px;border-top:1px solid var(--line);color:var(--muted)">${esc(prof.name)}${sd.modellspeicher?` · Modellspeicher „${esc(sd.modellspeicher)}“`:""}</p>${rows}</div></div>`;
+}
+// GitHub schreiben
+function b64utf8(str){const u8=new TextEncoder().encode(str);let s="";for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
+function utf8b64(b){const bin=atob(b.replace(/\n/g,""));const u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);return new TextDecoder().decode(u8)}
+async function ghMeta(path){
+  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${encodeURI(path)}`,{headers:{Authorization:"Bearer "+store.get("fmlq.token"),Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},cache:"no-store"});
+  if(!r.ok){const e=new Error("http");e.status=r.status;throw e}
+  const j=await r.json();return {sha:j.sha,data:JSON.parse(utf8b64(j.content))};
+}
+async function ghPut(path,data,sha,msg){
+  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${encodeURI(path)}`,{method:"PUT",headers:{Authorization:"Bearer "+store.get("fmlq.token"),Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"},
+    body:JSON.stringify({message:msg,content:b64utf8(JSON.stringify(data,null,1)),sha})});
+  if(!r.ok){const e=new Error("http");e.status=r.status;throw e}
+}
+// Änderung immer auf den neuesten Stand aus dem Repo anwenden (die Chats schreiben dieselbe Datei)
+async function saveModel(m,apply,msg){
+  const path=m._dir+"/quartett.json";
+  for(let t=0;t<2;t++){
+    const {sha,data}=await ghMeta(path);apply(data);
+    try{await ghPut(path,data,sha,msg);data._dir=m._dir;const i=models.findIndex(x=>x.id===m.id);if(i>=0)models[i]=data;store.set("fmlq.cache",JSON.stringify({t:Date.now(),models}));return}
+    catch(e){if(e.status!==409||t)throw e}
+  }
+}
+function saveErr(e){
+  if(e&&(e.status===403||e.status===404))return "Speichern nicht erlaubt: Dein Token darf nur lesen. Auf GitHub beim Token „Contents“ auf „Read and write“ stellen.";
+  if(e&&e.status===401)return "Der Token wird nicht mehr akzeptiert. Bitte neu eintragen.";
+  return "Speichern hat nicht geklappt. Internet prüfen und noch einmal versuchen.";
+}
+function closeEditor(){const o=$("#ov");if(o)o.remove()}
+function openGeberEditor(gid){
+  const m=models.find(x=>x.id===openId);const sd=senderOf(m);const prof=sd&&senders[sd.id];if(!prof)return;
+  const g=prof.geber.find(x=>x.id===gid);if(!g)return;const b=(sd.belegung||{})[gid]||{};const sw=g.typ==="schalter";
+  let start=b.start||"";
+  const o=document.createElement("div");o.className="ov";o.id="ov";
+  o.innerHTML=`<div class="esh" role="dialog" aria-modal="true" aria-label="${esc(g.name)}">
+    <div class="top"><span class="nb">${g.nr}</span><b>${esc(g.name)}</b></div>
+    <label for="e-f">Funktion</label><input id="e-f" value="${esc(b.funktion||"")}" placeholder="z. B. DIG, Licht, Lenkmodus" autocomplete="off">
+    ${sw?`<div class="two"><div><label for="e-o">Stellung oben</label><input id="e-o" value="${esc(b.oben||"")}" placeholder="z. B. an" autocomplete="off"></div><div><label for="e-u">Stellung unten</label><input id="e-u" value="${esc(b.unten||"")}" placeholder="z. B. aus" autocomplete="off"></div></div>
+    <label>Vor dem Einschalten</label><div class="seg" id="e-s">${["oben","unten",""].map(k=>`<button type="button" data-s="${k}" aria-pressed="${start===k}">${k||"egal"}</button>`).join("")}</div>`:""}
+    <label for="e-n">Notiz</label><input id="e-n" value="${esc(b.notiz||"")}" placeholder="optional" autocomplete="off">
+    <p class="emsg" id="e-msg" role="status"></p>
+    <div class="ebtns">${b.funktion?`<button class="abtn" id="e-del">Leeren</button>`:""}<button class="abtn" id="e-x">Abbrechen</button><button class="abtn primary" id="e-ok">Speichern</button></div></div>`;
+  document.body.appendChild(o);
+  o.addEventListener("click",async ev=>{
+    if(ev.target===o||ev.target.closest("#e-x")){closeEditor();return}
+    const sb=ev.target.closest("[data-s]");if(sb){start=sb.dataset.s;o.querySelectorAll("[data-s]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.s===start));return}
+    const del=ev.target.closest("#e-del"),ok=ev.target.closest("#e-ok");if(!del&&!ok)return;
+    const val=v=>(o.querySelector(v)?o.querySelector(v).value.trim():"");
+    const entry=del?null:{funktion:val("#e-f"),...(sw?{oben:val("#e-o"),unten:val("#e-u"),start}:{}),notiz:val("#e-n")};
+    if(entry){Object.keys(entry).forEach(k=>{if(!entry[k])delete entry[k]});if(!entry.funktion){$("#e-msg").textContent="Bitte eine Funktion eintragen (oder „Leeren“).";return}}
+    o.querySelectorAll("button").forEach(x=>x.disabled=true);$("#e-msg").textContent="Speichert …";
+    try{await saveModel(m,d=>{d.sender=d.sender||{id:sd.id};d.sender.belegung=d.sender.belegung||{};if(entry)d.sender.belegung[gid]=entry;else delete d.sender.belegung[gid]},
+        `Quartett-App: ${m.name} – ${g.name}${entry?" = "+entry.funktion:" geleert"}`);
+      closeEditor();render();}
+    catch(e){o.querySelectorAll("button").forEach(x=>x.disabled=false);$("#e-msg").textContent=saveErr(e)}
+  });
+  setTimeout(()=>{const f=$("#e-f");if(f)f.focus()},50);
+}
+function openSenderEditor(){
+  const m=models.find(x=>x.id===openId);const sd=senderOf(m);if(!sd)return;
+  const o=document.createElement("div");o.className="ov";o.id="ov";
+  o.innerHTML=`<div class="esh" role="dialog" aria-modal="true" aria-label="Modellspeicher und Hinweise">
+    <div class="top"><span class="nb k">M</span><b>Modellspeicher &amp; Hinweise</b></div>
+    <label for="e-m">Modellspeicher auf der Fernsteuerung</label><input id="e-m" value="${esc(sd.modellspeicher||"")}" placeholder="z. B. Capra" autocomplete="off">
+    <label for="e-h">Vor dem Einschalten – ein Hinweis pro Zeile</label><textarea id="e-h" placeholder="z. B. Erst Sender an, dann Akku ins Auto">${esc((sd.hinweise||[]).join("\n"))}</textarea>
+    <p class="emsg" id="e-msg" role="status"></p>
+    <div class="ebtns"><button class="abtn" id="e-x">Abbrechen</button><button class="abtn primary" id="e-ok">Speichern</button></div></div>`;
+  document.body.appendChild(o);
+  o.addEventListener("click",async ev=>{
+    if(ev.target===o||ev.target.closest("#e-x")){closeEditor();return}
+    if(!ev.target.closest("#e-ok"))return;
+    const ms=$("#e-m").value.trim(),hs=$("#e-h").value.split("\n").map(x=>x.trim()).filter(Boolean);
+    o.querySelectorAll("button").forEach(x=>x.disabled=true);$("#e-msg").textContent="Speichert …";
+    try{await saveModel(m,d=>{d.sender=d.sender||{id:sd.id};d.sender.modellspeicher=ms;d.sender.hinweise=hs},`Quartett-App: ${m.name} – Modellspeicher/Hinweise`);closeEditor();render()}
+    catch(e){o.querySelectorAll("button").forEach(x=>x.disabled=false);$("#e-msg").textContent=saveErr(e)}
+  });
+}
 let pdfFile=null;
 function loadScriptOnce(src){return new Promise((ok,bad)=>{if(document.querySelector(`script[src="${src}"]`))return ok();const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>bad(new Error("lib"));document.head.appendChild(s)})}
 async function sharePdf(){
@@ -273,7 +420,8 @@ async function makePdf(costs,btn){
     await loadScriptOnce("pdf.js");
     const paths=fotosOf(m);await Promise.all(paths.map(loadPhoto));
     const urls=paths.map(p=>photoUrls[p]).filter(Boolean);
-    const blob=await window.fmlPdf.build({...m,_fotoUrls:urls},m.code,costs,urls[0]||null);
+    const sd=senderOf(m);if(sd)await loadSender(sd.id);
+    const blob=await window.fmlPdf.build({...m,_fotoUrls:urls,_sender:sd&&senders[sd.id]?{prof:senders[sd.id],img:senderImg[sd.id]||null}:null},m.code,costs,urls[0]||null);
     const slug=(m.name||"Modell").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
     pdfFile=new File([blob],`FML-Quartett_${m.code}_${slug}${costs?"_mit-Kosten":""}.pdf`,{type:"application/pdf"});
     btn.textContent=old;btns.forEach(b=>b.disabled=false);
@@ -325,16 +473,18 @@ function renderSheet(){
       <div class="sphoto">${galleryHTML(m)}</div>
       <div class="lead"><h2>${esc(m.name)}</h2><p>${esc(KLABEL[m.kategorie]||"")} · ${esc(m.massstab||"")} · ${esc(m.untertitel||"")}</p></div>
       <div class="acts"><button class="abtn" data-pdf="0">PDF</button><button class="abtn" data-pdf="1">PDF mit Kosten</button><button class="abtn primary" id="pdfshare" hidden>PDF teilen</button><span class="amsg" id="pdfmsg" role="status"></span></div>
+      ${checkHTML(m)}
       <div class="sec"><h4>Technische Daten</h4><div class="box"><ul class="stats">${statRows(m,true)}</ul></div></div>
       <div class="sec"><h4><span>Verbaute Komponenten</span><button class="toggle" id="costs" aria-pressed="${showCosts}">${showCosts?"Kosten ausblenden":"Kosten zeigen"}</button></h4>
         <div class="box">${parts||'<p class="notes">Noch keine Komponenten erfasst.</p>'}<div class="totalrow"><span>Gesamt</span><span>${eur(sum)}</span></div></div></div>
+      ${senderHTML(m)}
       ${videosHTML(m)}
       ${(m.offen||[]).length?`<div class="sec"><h4>Noch offen</h4><div class="box"><ul class="notes">${m.offen.map(o=>`<li>${esc(o)}</li>`).join("")}</ul></div></div>`:""}
     </div>`;
   s.hidden=false;
   const ng=$("#gal");if(ng&&keep){ng.scrollLeft=keep}
 }
-function openSheet(id){openId=id;showCosts=false;renderSheet();$("#sheet").scrollTop=0;const m=models.find(x=>x.id===id);if(m)fotosOf(m).forEach(loadPhoto)}
+function openSheet(id){openId=id;showCosts=false;const mm=models.find(x=>x.id===id);const sd=senderOf(mm);if(sd&&senders[sd.id]===undefined)loadSender(sd.id).then(()=>{if(openId===id)renderSheet()});renderSheet();$("#sheet").scrollTop=0;const m=models.find(x=>x.id===id);if(m)fotosOf(m).forEach(loadPhoto)}
 function closeSheet(){openId=null;$("#sheet").hidden=true}
 
 function showSetup(msg){
@@ -369,6 +519,9 @@ document.addEventListener("click",e=>{
   const c=e.target.closest(".chip"); if(c){filter=c.dataset.k;store.set("fmlq.filter",filter);render();$("#deck").scrollLeft=0;return}
   const q=e.target.closest(".qcard"); if(q){openSheet(q.dataset.id);return}
   if(e.target.closest("#lbclose")){closeLightbox();return}
+  if(e.target.closest("#ov"))return;
+  const gb=e.target.closest("[data-geber]"); if(gb){openGeberEditor(gb.dataset.geber);return}
+  if(e.target.closest("#sedit")){openSenderEditor();return}
   const pb=e.target.closest("[data-pdf]"); if(pb){makePdf(pb.dataset.pdf==="1",pb);return}
   if(e.target.closest("#pdfshare")){sharePdf();return}
   const gp=e.target.closest(".sphoto .photo[data-i]"); if(gp&&!gp.dataset.none){openLightbox(+gp.dataset.i);return}
@@ -382,7 +535,7 @@ document.addEventListener("click",e=>{
     store.set("fmlq.token",t); start(); return
   }
 });
-document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if($("#lb"))closeLightbox();else if(openId)closeSheet()});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if($("#ov")){closeEditor();return}if($("#lb"))closeLightbox();else if(openId)closeSheet()});
 document.addEventListener("scroll",e=>{const g=e.target;if(g&&g.id==="gal"){const n=g.children.length,k=Math.round(g.scrollLeft/g.clientWidth);const c=$("#gcount");if(c)c.textContent=`${k+1}/${n}`}},{capture:true,passive:true});
 $("#deck").addEventListener("scroll",()=>{
   const d=$("#deck"),cards=d.querySelectorAll(".qcard");if(!cards.length)return;
