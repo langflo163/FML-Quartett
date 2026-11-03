@@ -15,6 +15,8 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 
 ## Version
 
+v1.5.1 (03.11.2026): Unter dem Sender-Bild nur belegte Geber; unbelegte nur als grauer Punkt im Bild (antippen zum Belegen).
+
 v1.5 (03.11.2026): Fernsteuerung pro Modell – Sender-Bild mit nummerierten Gebern (rote Linie, grau = unbelegt), Geber antippen →
 Funktion, Stellungen oben/unten, Startstellung, Notiz eintragen und direkt ins Repo speichern; Modellspeicher + Hinweise;
 Kasten „Vor dem Einschalten“ im Datenblatt; alles auch im PDF.

@@ -317,12 +317,12 @@ function senderHTML(m){
   const lines=prof.geber.map(g=>{const on=!!(bel[g.id]&&bel[g.id].funktion);const c=on?"#D3202A":"#9C9895";const [x,y]=g.ziel;const [lx,ly]=g.label||g.ziel;
     return (g.label?`<line x1="${lx}" y1="${ly}" x2="${x}" y2="${y}" stroke="${c}" stroke-width="3"/><circle cx="${x}" cy="${y}" r="6" fill="${c}" stroke="#fff" stroke-width="2"/>`:"")
       +`<g class="hit" data-geber="${g.id}"><circle cx="${lx}" cy="${ly}" r="30" fill="transparent"/><circle cx="${lx}" cy="${ly}" r="21" fill="${c}" stroke="#fff" stroke-width="3"/><text x="${lx}" y="${ly+1}" text-anchor="middle" dominant-baseline="middle" font-family="Saira Condensed,Arial Narrow,sans-serif" font-weight="800" font-size="24" fill="#fff">${g.nr}</text></g>`}).join("");
-  const rows=prof.geber.map(g=>{const b=bel[g.id]||{};const sw=g.typ==="schalter";
+  const rows=prof.geber.filter(g=>bel[g.id]&&bel[g.id].funktion).map(g=>{const b=bel[g.id]||{};const sw=g.typ==="schalter";
     const st=sw?["oben","unten"].filter(k=>b[k]).map(k=>`<span class="pill${b.start===k?" st":""}">${k} = ${esc(b[k])}${b.start===k?" · Start":""}</span>`).join(""):"";
     return `<button class="grow" data-geber="${g.id}"><span class="nb${b.funktion?"":" off"}">${g.nr}</span><div><div class="g">${esc(g.name)}${sw?" · Schalter":""}</div><div class="f${b.funktion?"":" nf"}">${b.funktion?esc(b.funktion):"antippen zum Eintragen"}</div></div>${st?`<div class="s">${st}</div>`:""}${b.notiz?`<div class="nt">${esc(b.notiz)}</div>`:""}</button>`}).join("");
   return `<div class="sec"><h4><span>Fernsteuerung</span><button class="ebtn" id="sedit">Modellspeicher &amp; Hinweise</button></h4>
     <div class="box"><div class="spic">${senderImg[sd.id]?`<img src="${senderImg[sd.id]}" alt="${esc(prof.name)}">`:`<div style="aspect-ratio:${prof.breite}/${prof.hoehe}"></div>`}<svg viewBox="0 0 ${prof.breite} ${prof.hoehe}">${lines}</svg></div>
-    <p class="notes" style="padding:8px 14px;border-top:1px solid var(--line);color:var(--muted)">${esc(prof.name)}${sd.modellspeicher?` · Modellspeicher „${esc(sd.modellspeicher)}“`:""}</p>${rows}</div></div>`;
+    <p class="notes" style="padding:8px 14px;border-top:1px solid var(--line);color:var(--muted)">${esc(prof.name)}${sd.modellspeicher?` · Modellspeicher „${esc(sd.modellspeicher)}“`:""}${rows?"":" · Grauen Punkt im Bild antippen, um einen Geber zu belegen."}</p>${rows}</div></div>`;
 }
 // GitHub schreiben
 function b64utf8(str){const u8=new TextEncoder().encode(str);let s="";for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
