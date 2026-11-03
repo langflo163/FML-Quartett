@@ -129,7 +129,7 @@ button,input{font:inherit;color:inherit}
 .chk .hd{white-space:nowrap;background:var(--red);color:#fff;font-family:var(--f-display);font-weight:800;font-size:17px;letter-spacing:1px;text-transform:uppercase;padding:7px 14px;display:flex;justify-content:space-between;gap:10px}
 .crow{display:flex;align-items:center;gap:12px;padding:9px 14px;border-top:1px solid var(--line)}
 .crow:first-of-type{border-top:0}
-.nb{flex:none;width:26px;height:26px;border-radius:50%;background:var(--red);color:#fff;font-family:var(--f-display);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+.nb{flex:none;min-width:26px;width:auto;padding:0 6px;height:26px;border-radius:13px;white-space:nowrap;background:var(--red);color:#fff;font-family:var(--f-display);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
 .nb.k{background:var(--ink)}.nb.off{background:var(--line);color:var(--muted)}
 .crow .t{flex:1;min-width:0}.crow .t b{display:block;font-weight:600;font-size:14px}.crow .t span{font-size:12.5px;color:var(--muted)}
 .swi{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--f-display);font-weight:700;font-size:12px;text-transform:uppercase}
@@ -138,7 +138,7 @@ button,input{font:inherit;color:inherit}
 .spic img{display:block;width:100%;height:auto}
 .spic svg{position:absolute;inset:0;width:100%;height:100%}
 .spic .hit{cursor:pointer}
-.grow{display:grid;grid-template-columns:26px 1fr;gap:4px 10px;padding:9px 14px;border-top:1px solid var(--line);cursor:pointer;width:100%;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;font:inherit;color:inherit}
+.grow{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:9px 14px;border-top:1px solid var(--line);cursor:pointer;width:100%;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;font:inherit;color:inherit}
 .grow .g{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
 .grow .f{font-weight:600}.grow .f.nf{font-weight:400;color:var(--muted)}
 .grow .s{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px}
@@ -219,7 +219,7 @@ button,input{font:inherit;color:inherit}
 <section class="sheet costs-off" id="sheet" hidden role="dialog" aria-modal="true"></section>
 
 <script>
-const APPV="1.7";
+const APPV="1.8";
 const REPO="langflo163/FML-Github", INDEX="FML-Quartett/modelle.json";
 const KATS=[["alle","Alle",""],["auto","Autos","A"],["flugzeug","Flugzeuge","F"],["boot","Boote","B"],["heli","Helis","H"]];
 const KLABEL={auto:"RC-Car",flugzeug:"Flugzeug",boot:"Boot",heli:"Hubschrauber"};
@@ -309,7 +309,7 @@ function checkHTML(m){
   const sd=senderOf(m);if(!sd)return "";const prof=senders[sd.id];const bel=sd.belegung||{};
   const rows=[];
   if(prof) prof.geber.forEach(g=>{const b=bel[g.id];if(b&&b.start){
-    const txt=(stellOf(b).find(x=>x.name===b.start)||{}).text||"";rows.push(`<div class="crow"><span class="nb">${g.nr}</span><div class="t"><b>${esc(g.name)}${b.funktion?" · "+esc(b.funktion):""}</b>${txt?`<span>${esc(b.start)} = ${esc(txt)}</span>`:""}</div><div class="swi">${swIcon(b.start)}${esc(b.start)}</div></div>`)}});
+    const txt=(stellOf(b).find(x=>x.name===b.start)||{}).text||"";rows.push(`<div class="crow"><span class="nb">${esc(g.kurz||g.nr)}</span><div class="t"><b>${esc(g.name)}${b.funktion?" · "+esc(b.funktion):""}</b>${txt?`<span>${esc(b.start)} = ${esc(txt)}</span>`:""}</div><div class="swi">${swIcon(b.start)}${esc(b.start)}</div></div>`)}});
   if(sd.modellspeicher) rows.push(`<div class="crow"><span class="nb k">M</span><div class="t"><b>Modellspeicher „${esc(sd.modellspeicher)}“</b><span>auf der ${esc(prof?prof.name:"Fernsteuerung")} wählen</span></div></div>`);
   (sd.hinweise||[]).forEach(h=>rows.push(`<div class="crow"><span class="nb k">!</span><div class="t"><b>${esc(h)}</b></div></div>`));
   if(!rows.length) return "";
@@ -323,10 +323,10 @@ function senderHTML(m){
   const R=Math.round(prof.breite*0.028),HR=Math.round(prof.breite*0.05),FS=Math.round(R*1.15);
   const lines=prof.geber.map(g=>{const on=!!(bel[g.id]&&bel[g.id].funktion);const c=on?"#D3202A":"#9C9895";const [x,y]=g.ziel;const [lx,ly]=g.label||g.ziel;
     return (g.label?`<line x1="${lx}" y1="${ly}" x2="${x}" y2="${y}" stroke="${c}" stroke-width="3"/><circle cx="${x}" cy="${y}" r="6" fill="${c}" stroke="#fff" stroke-width="2"/>`:"")
-      +`<g class="hit" data-geber="${g.id}"><circle cx="${lx}" cy="${ly}" r="${HR}" fill="transparent"/><circle cx="${lx}" cy="${ly}" r="${R}" fill="${c}" stroke="#fff" stroke-width="3"/><text x="${lx}" y="${ly+1}" text-anchor="middle" dominant-baseline="middle" font-family="Saira Condensed,Arial Narrow,sans-serif" font-weight="800" font-size="${FS}" fill="#fff">${g.nr}</text></g>`}).join("");
+      +`<g class="hit" data-geber="${g.id}"><circle cx="${lx}" cy="${ly}" r="${HR}" fill="transparent"/>${(()=>{const t=String(g.kurz||g.nr),w=Math.max(2*R,t.length*FS*0.56+R);return `<rect x="${lx-w/2}" y="${ly-R}" width="${w}" height="${2*R}" rx="${R}" fill="${c}" stroke="#fff" stroke-width="3"/><text x="${lx}" y="${ly+1}" text-anchor="middle" dominant-baseline="middle" font-family="Saira Condensed,Arial Narrow,sans-serif" font-weight="800" font-size="${FS}" fill="#fff">${esc(t)}</text>`})()}</g>`}).join("");
   const rows=prof.geber.filter(g=>bel[g.id]&&bel[g.id].funktion).map(g=>{const b=bel[g.id]||{};const sw=g.typ==="schalter";
     const st=stellOf(b).map(x=>`<span class="pill${b.start===x.name?" st":""}">${esc(x.name)} = ${esc(x.text)}${b.start===x.name?" · Start":""}</span>`).join("");
-    return `<button class="grow" data-geber="${g.id}"><span class="nb${b.funktion?"":" off"}">${g.nr}</span><div><div class="g">${esc(g.name)}${sw?" · Schalter":""}</div><div class="f${b.funktion?"":" nf"}">${b.funktion?esc(b.funktion):"antippen zum Eintragen"}</div></div>${st?`<div class="s">${st}</div>`:""}${b.notiz?`<div class="nt">${esc(b.notiz)}</div>`:""}</button>`}).join("");
+    return `<button class="grow" data-geber="${g.id}"><span class="nb${b.funktion?"":" off"}">${esc(g.kurz||g.nr)}</span><div><div class="g">${esc(g.name)}${sw?" · Schalter":""}</div><div class="f${b.funktion?"":" nf"}">${b.funktion?esc(b.funktion):"antippen zum Eintragen"}</div></div>${st?`<div class="s">${st}</div>`:""}${b.notiz?`<div class="nt">${esc(b.notiz)}</div>`:""}</button>`}).join("");
   return `<div class="sec"><h4><span>Fernsteuerung</span><button class="ebtn" id="sedit">Modellspeicher &amp; Hinweise</button></h4>
     <div class="box"><div class="spic">${senderImg[sd.id]?`<img src="${senderImg[sd.id]}" alt="${esc(prof.name)}">`:`<div style="aspect-ratio:${prof.breite}/${prof.hoehe}"></div>`}<svg viewBox="0 0 ${prof.breite} ${prof.hoehe}">${lines}</svg></div>
     <p class="notes" style="padding:8px 14px;border-top:1px solid var(--line);color:var(--muted)">${esc(prof.name)}${sd.modellspeicher?` · Modellspeicher „${esc(sd.modellspeicher)}“`:""}${rows?"":" · Grauen Punkt im Bild antippen, um einen Geber zu belegen."}</p>${rows}</div></div>`;
@@ -373,7 +373,7 @@ function openGeberEditor(gid){
   const rowsInit=have.length?have.map(x=>({...x})):(DEFSTELL[g.typ]||DEFSTELL.geber).map(n=>({name:n,text:""}));
   const o=document.createElement("div");o.className="ov";o.id="ov";
   o.innerHTML=`<div class="esh" role="dialog" aria-modal="true" aria-label="${esc(g.name)}">
-    <div class="etop"><span class="nb">${g.nr}</span><b>${esc(g.name)}</b></div>
+    <div class="etop"><span class="nb">${esc(g.kurz||g.nr)}</span><b>${esc(g.name)}</b></div>
     <label for="e-f">Funktion</label><input id="e-f" value="${esc(b.funktion||"")}" placeholder="z. B. DIG, Licht, Lenkmodus" autocomplete="off">
     <label>Stellungen – was passiert wo</label>
     <div id="e-rows" class="srows"></div>

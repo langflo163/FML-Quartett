@@ -151,16 +151,17 @@
         doc.setFillColor(...RED); doc.rect(L, y - 4.5, R - L, 7, "F");
         set("Saira", "bold", 10.5, [255, 255, 255]); doc.text("VOR DEM EINSCHALTEN", L + 3, y + 0.4);
         y += 6;
-        const items = starts.map(g => [String(g.nr), `${g.name}${bel[g.id].funktion ? " · " + bel[g.id].funktion : ""}`, (() => { const b = bel[g.id], t = (stOf(b).find(x => x.name === b.start) || {}).text; return b.start.toUpperCase() + (t ? " = " + t : ""); })()]);
+        const items = starts.map(g => [String(g.kurz || g.nr), `${g.name}${bel[g.id].funktion ? " · " + bel[g.id].funktion : ""}`, (() => { const b = bel[g.id], t = (stOf(b).find(x => x.name === b.start) || {}).text; return b.start.toUpperCase() + (t ? " = " + t : ""); })()]);
         if (sd.modellspeicher) items.push(["M", `Modellspeicher „${sd.modellspeicher}“ wählen`, ""]);
         hints.forEach(h => items.push(["!", h, ""]));
         items.forEach(([n, t, r], i) => {
           set("Plex", "normal", 8.6); const tl = doc.splitTextToSize(t, 120); const h = tl.length * lh(8.6) + 2.6;
           ensure(h);
           if (i) { doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(L, y, R, y); }
-          doc.setFillColor(...(/^\d+$/.test(n) ? RED : INK)); doc.circle(L + 3, y + 3.2, 2.6, "F");
-          set("Saira", "bold", 8, [255, 255, 255]); doc.text(n, L + 3, y + 3.3, { align: "center", baseline: "middle" });
-          set("Plex", "normal", 8.6); doc.text(tl, L + 8, y + 4.1);
+          set("Saira", "bold", 8, [255, 255, 255]); const nw = Math.max(5.2, doc.getTextWidth(n) + 2.6);
+          doc.setFillColor(...(n === "M" || n === "!" ? INK : RED)); doc.roundedRect(L + 0.4, y + 0.6, nw, 5.2, 2.6, 2.6, "F");
+          set("Saira", "bold", 8, [255, 255, 255]); doc.text(n, L + 0.4 + nw / 2, y + 3.3, { align: "center", baseline: "middle" });
+          set("Plex", "normal", 8.6); doc.text(tl, L + nw + 4, y + 4.1);
           if (r) { set("Saira", "bold", 9.5, RED); doc.text(r, R, y + 4.1, { align: "right" }); }
           y += h;
         });
@@ -180,8 +181,9 @@
             used.forEach(g => {
               const [tx, ty] = g.ziel, [lx, ly] = g.label || g.ziel;
               x.strokeStyle = "#D3202A"; x.lineWidth = 3; if (g.label) { x.beginPath(); x.moveTo(lx, ly); x.lineTo(tx, ty); x.stroke(); }
-              x.fillStyle = "#D3202A"; x.strokeStyle = "#fff"; x.lineWidth = 3; const RR = Math.round(S.prof.breite * 0.028); x.beginPath(); x.arc(lx, ly, RR, 0, 7); x.fill(); x.stroke();
-              x.fillStyle = "#fff"; x.font = "800 " + Math.round(RR * 1.15) + "px 'Saira Condensed', Arial Narrow, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(String(g.nr), lx, ly + 1);
+              x.fillStyle = "#D3202A"; x.strokeStyle = "#fff"; x.lineWidth = 3; const RR = Math.round(S.prof.breite * 0.028); const lt = String(g.kurz || g.nr), lw = Math.max(2 * RR, lt.length * RR * 1.15 * 0.56 + RR);
+              x.beginPath(); if (x.roundRect) x.roundRect(lx - lw / 2, ly - RR, lw, 2 * RR, RR); else x.arc(lx, ly, RR, 0, 7); x.fill(); x.stroke();
+              x.fillStyle = "#fff"; x.font = "800 " + Math.round(RR * 1.15) + "px 'Saira Condensed', Arial Narrow, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(lt, lx, ly + 1);
             });
             doc.addImage(c.toDataURL("image/jpeg", 0.88), "JPEG", L, top, iw, ih);
           } catch (e) {}
@@ -198,10 +200,11 @@
           const h = fl.length * lh(8.6) + sl.length * lh(6.6) + 2.4;
           if (ly2 + h > BOTTOM) { doc.addPage(); ly2 = 16; }
           if (i) { doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(tx0 - 1, ly2 - 2.6, R, ly2 - 2.6); }
-          doc.setFillColor(...RED); doc.circle(tx0 + 2.4, ly2 + 0.2, 2.6, "F");
-          set("Saira", "bold", 8, [255, 255, 255]); doc.text(String(g.nr), tx0 + 2.4, ly2 + 0.3, { align: "center", baseline: "middle" });
-          set("Plex", "normal", 8.6); doc.text(fl, tx0 + 8, ly2 + 1.2);
-          set("Plex", "normal", 6.6, MUTED); doc.text(sl, tx0 + 8, ly2 + 1.2 + fl.length * lh(8.6));
+          const bt = String(g.kurz || g.nr); set("Saira", "bold", 8, [255, 255, 255]); const bw = Math.max(5.2, doc.getTextWidth(bt) + 2.6);
+          doc.setFillColor(...RED); doc.roundedRect(tx0, ly2 - 2.4, bw, 5.2, 2.6, 2.6, "F");
+          doc.text(bt, tx0 + bw / 2, ly2 + 0.3, { align: "center", baseline: "middle" });
+          set("Plex", "normal", 8.6); doc.text(fl, tx0 + bw + 3, ly2 + 1.2);
+          set("Plex", "normal", 6.6, MUTED); doc.text(sl, tx0 + bw + 3, ly2 + 1.2 + fl.length * lh(8.6));
           ly2 += h + 1.6;
         });
         y = doc.getCurrentPageInfo().pageNumber === doc.getNumberOfPages() ? Math.max(top + ih, ly2) : ly2;
