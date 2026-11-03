@@ -219,7 +219,7 @@ button,input{font:inherit;color:inherit}
 <section class="sheet costs-off" id="sheet" hidden role="dialog" aria-modal="true"></section>
 
 <script>
-const APPV="1.8";
+const APPV="1.8.1";
 const REPO="langflo163/FML-Github", INDEX="FML-Quartett/modelle.json";
 const KATS=[["alle","Alle",""],["auto","Autos","A"],["flugzeug","Flugzeuge","F"],["boot","Boote","B"],["heli","Helis","H"]];
 const KLABEL={auto:"RC-Car",flugzeug:"Flugzeug",boot:"Boot",heli:"Hubschrauber"};
@@ -324,7 +324,7 @@ function senderHTML(m){
   const lines=prof.geber.map(g=>{const on=!!(bel[g.id]&&bel[g.id].funktion);const c=on?"#D3202A":"#9C9895";const [x,y]=g.ziel;const [lx,ly]=g.label||g.ziel;
     return (g.label?`<line x1="${lx}" y1="${ly}" x2="${x}" y2="${y}" stroke="${c}" stroke-width="3"/><circle cx="${x}" cy="${y}" r="6" fill="${c}" stroke="#fff" stroke-width="2"/>`:"")
       +`<g class="hit" data-geber="${g.id}"><circle cx="${lx}" cy="${ly}" r="${HR}" fill="transparent"/>${(()=>{const t=String(g.kurz||g.nr),w=Math.max(2*R,t.length*FS*0.56+R);return `<rect x="${lx-w/2}" y="${ly-R}" width="${w}" height="${2*R}" rx="${R}" fill="${c}" stroke="#fff" stroke-width="3"/><text x="${lx}" y="${ly+1}" text-anchor="middle" dominant-baseline="middle" font-family="Saira Condensed,Arial Narrow,sans-serif" font-weight="800" font-size="${FS}" fill="#fff">${esc(t)}</text>`})()}</g>`}).join("");
-  const rows=prof.geber.filter(g=>bel[g.id]&&bel[g.id].funktion).map(g=>{const b=bel[g.id]||{};const sw=g.typ==="schalter";
+  const rows=prof.geber.filter(g=>bel[g.id]&&bel[g.id].funktion).map(g=>{const b=bel[g.id]||{};const sw=/^schalter/.test(g.typ);
     const st=stellOf(b).map(x=>`<span class="pill${b.start===x.name?" st":""}">${esc(x.name)} = ${esc(x.text)}${b.start===x.name?" · Start":""}</span>`).join("");
     return `<button class="grow" data-geber="${g.id}"><span class="nb${b.funktion?"":" off"}">${esc(g.kurz||g.nr)}</span><div><div class="g">${esc(g.name)}${sw?" · Schalter":""}</div><div class="f${b.funktion?"":" nf"}">${b.funktion?esc(b.funktion):"antippen zum Eintragen"}</div></div>${st?`<div class="s">${st}</div>`:""}${b.notiz?`<div class="nt">${esc(b.notiz)}</div>`:""}</button>`}).join("");
   return `<div class="sec"><h4><span>Fernsteuerung</span><button class="ebtn" id="sedit">Modellspeicher &amp; Hinweise</button></h4>
@@ -359,7 +359,7 @@ function saveErr(e){
   return "Speichern hat nicht geklappt. Internet prüfen und noch einmal versuchen.";
 }
 function closeEditor(){const o=$("#ov");if(o)o.remove()}
-const DEFSTELL={rad:["links","rechts"],hebel:["ziehen","drücken"],wippe:["Stellung 1","Stellung 2"],taster:["gedrückt"],schalter:["oben","unten"],knueppel:["oben","unten","links","rechts"],drehknopf:["links","rechts"],schieber:["oben","unten"],geber:["Stellung 1","Stellung 2"]};
+const DEFSTELL={rad:["links","rechts"],hebel:["ziehen","drücken"],wippe:["Stellung 1","Stellung 2"],taster:["gedrückt"],schalter:["oben","unten"],schalter3:["oben","mitte","unten"],knueppel:["oben","unten","links","rechts"],drehknopf:["links","rechts"],schieber:["oben","unten"],geber:["Stellung 1","Stellung 2"]};
 function stellOf(b){
   if(!b)return [];
   if(Array.isArray(b.stellungen))return b.stellungen.filter(x=>x&&x.text);
@@ -367,7 +367,7 @@ function stellOf(b){
 }
 function openGeberEditor(gid){
   const m=models.find(x=>x.id===openId);const sd=senderOf(m);const prof=sd&&senders[sd.id];if(!prof)return;
-  const g=prof.geber.find(x=>x.id===gid);if(!g)return;const b=(sd.belegung||{})[gid]||{};const sw=g.typ==="schalter";
+  const g=prof.geber.find(x=>x.id===gid);if(!g)return;const b=(sd.belegung||{})[gid]||{};const sw=/^schalter/.test(g.typ);
   let start=b.start||"";
   const have=stellOf(b);
   const rowsInit=have.length?have.map(x=>({...x})):(DEFSTELL[g.typ]||DEFSTELL.geber).map(n=>({name:n,text:""}));

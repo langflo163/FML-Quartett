@@ -16,6 +16,8 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 
 ## Version
 
+v1.8.1 (03.11.2026): Geber-Typ `schalter3` (oben/mitte/unten, mit Startstellung).
+
 v1.8 (03.11.2026): Geber-Schilder zeigen die Original-Bezeichnung (`kurz` im Sender-Profil, z. B. Sa, SF, trim 3-4) statt der Nummer – im Bild, in der Liste, im Editor und im PDF.
 
 v1.7 (03.11.2026): Geber-Typen knueppel (oben/unten/links/rechts), drehknopf (links/rechts), schieber (oben/unten) für die Jeti DC-16.
