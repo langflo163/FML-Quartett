@@ -9,11 +9,16 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 - Laden per GitHub-API (`contents`, Accept `application/vnd.github.raw+json`) mit Fine-grained-Token
   (nur FML-Github, Contents read-only; für Bearbeiten in der App „Read and write“). Speichern: GET mit sha → Änderung auf den
   neuesten Stand anwenden → PUT (bei 409 einmal neu versuchen), gespeichert in localStorage `fmlq.token`. Letzter Stand in `fmlq.cache`.
+- App-Version: `APPV` in `index.html` (wird in der Statuszeile angezeigt) – bei jeder Änderung hochzählen, dazu `V` in `sw.js`.
 - `index.html` (kein Build) + `pdf.js` (PDF-Export, lädt erst bei Bedarf `lib/jspdf.umd.min.js` 2.5.1, `lib/qrcode.js` 1.4.4 und die TTF-Schriften aus `fonts/`), `sw.js` cacht nur die App-Hülle. Bei Änderungen an der Hülle `V` in `sw.js` hochzählen.
 - Optik: flach, Rot/Weiß/Schwarz, keine Verläufe. Schriften Saira Condensed / IBM Plex Sans / IBM Plex Mono.
 - Doku zu Datenformat und Pflege: `FML-Quartett/CLAUDE.md` im privaten Repo.
 
 ## Version
+
+v1.6 (03.11.2026): Jeder Geber hat frei benennbare Stellungen mit Beschreibung (Vorgaben je Typ: Rad links/rechts, Hebel ziehen/drücken,
+Taster gedrückt, Schalter oben/unten, Wippe Stellung 1/2), „+ Stellung“; Startstellung bei Schaltern. Versionsnummer in der Statuszeile.
+Service Worker lädt mit `cache: no-cache` (GitHub Pages cacht sonst bis 10 min).
 
 v1.5.1 (03.11.2026): Unter dem Sender-Bild nur belegte Geber; unbelegte nur als grauer Punkt im Bild (antippen zum Belegen).
 

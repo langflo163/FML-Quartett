@@ -143,14 +143,15 @@
     const S = m._sender, sd = m.sender;
     if (S && sd) {
       const bel = sd.belegung || {}, used = S.prof.geber.filter(g => bel[g.id] && bel[g.id].funktion);
-      const starts = used.filter(g => bel[g.id].start === "oben" || bel[g.id].start === "unten");
+      const stOf = b => Array.isArray(b.stellungen) ? b.stellungen.filter(x => x && x.text) : ["oben", "unten"].filter(k => b[k]).map(k => ({ name: k, text: b[k] }));
+      const starts = used.filter(g => bel[g.id].start);
       const hints = sd.hinweise || [];
       if (starts.length || hints.length || sd.modellspeicher) {
         y += 8; ensure(20);
         doc.setFillColor(...RED); doc.rect(L, y - 4.5, R - L, 7, "F");
         set("Saira", "bold", 10.5, [255, 255, 255]); doc.text("VOR DEM EINSCHALTEN", L + 3, y + 0.4);
         y += 6;
-        const items = starts.map(g => [String(g.nr), `${g.name}${bel[g.id].funktion ? " · " + bel[g.id].funktion : ""}`, `${bel[g.id].start.toUpperCase()}${bel[g.id][bel[g.id].start] ? " = " + bel[g.id][bel[g.id].start] : ""}`]);
+        const items = starts.map(g => [String(g.nr), `${g.name}${bel[g.id].funktion ? " · " + bel[g.id].funktion : ""}`, (() => { const b = bel[g.id], t = (stOf(b).find(x => x.name === b.start) || {}).text; return b.start.toUpperCase() + (t ? " = " + t : ""); })()]);
         if (sd.modellspeicher) items.push(["M", `Modellspeicher „${sd.modellspeicher}“ wählen`, ""]);
         hints.forEach(h => items.push(["!", h, ""]));
         items.forEach(([n, t, r], i) => {
@@ -190,8 +191,8 @@
           const b = bel[g.id];
           set("Plex", "normal", 8.6); const fl = doc.splitTextToSize(b.funktion, tw);
           const sub = [g.name];
-          if (b.oben) sub.push("oben = " + b.oben + (b.start === "oben" ? " (Start)" : ""));
-          if (b.unten) sub.push("unten = " + b.unten + (b.start === "unten" ? " (Start)" : ""));
+          const stl = Array.isArray(b.stellungen) ? b.stellungen.filter(x => x && x.text) : ["oben", "unten"].filter(k => b[k]).map(k => ({ name: k, text: b[k] }));
+          stl.forEach(x => sub.push(x.name + " = " + x.text + (b.start === x.name ? " (Start)" : "")));
           if (b.notiz) sub.push(b.notiz);
           set("Plex", "normal", 6.6); const sl = doc.splitTextToSize(sub.join(" · "), tw);
           const h = fl.length * lh(8.6) + sl.length * lh(6.6) + 2.4;

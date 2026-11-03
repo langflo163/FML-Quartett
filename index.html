@@ -148,8 +148,8 @@ button,input{font:inherit;color:inherit}
 .ebtn{border:1.5px solid var(--ink);background:var(--card);border-radius:999px;padding:3px 11px;font-family:var(--f-body);font-weight:600;font-size:12px;letter-spacing:0;text-transform:none;cursor:pointer}
 .ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
 .esh{width:100%;max-width:560px;max-height:92%;overflow-y:auto;background:var(--card);border-radius:16px 16px 0 0;padding:16px var(--sr) calc(20px + env(safe-area-inset-bottom,0px)) var(--sl);display:flex;flex-direction:column;gap:10px}
-.esh .top{display:flex;align-items:center;gap:10px}
-.esh .top b{flex:1;font-family:var(--f-display);font-weight:800;font-size:20px;text-transform:uppercase;line-height:1.1}
+.esh .etop{display:flex;align-items:center;gap:10px}
+.esh .etop b{flex:1;font-family:var(--f-display);font-weight:800;font-size:20px;text-transform:uppercase;line-height:1.1}
 .esh label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
 .esh input,.esh textarea{width:100%;border:2px solid var(--ink);border-radius:10px;padding:9px 12px;font:inherit;font-size:16px;background:var(--card);color:var(--ink)}
 .esh textarea{min-height:84px;resize:vertical}
@@ -158,6 +158,11 @@ button,input{font:inherit;color:inherit}
 .seg button{border:0;background:var(--card);padding:9px 4px;font-family:var(--f-display);font-weight:700;font-size:15px;text-transform:uppercase;cursor:pointer;color:var(--ink)}
 .seg button+button{border-left:2px solid var(--ink)}
 .seg button[aria-pressed="true"]{background:var(--red);color:#fff}
+.srows{display:flex;flex-direction:column;gap:8px}
+.srow{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) 36px;gap:6px}
+.srow .sx{border:1.5px solid var(--line);background:var(--card);border-radius:10px;font-size:20px;line-height:1;color:var(--muted);cursor:pointer}
+.abtn.small{align-self:flex-start;padding:5px 12px;font-size:14px}
+.seg{display:flex!important;flex-wrap:wrap}.seg button{flex:1 1 auto}
 .ebtns{display:flex;gap:10px;margin-top:4px}.ebtns button{flex:1}
 .emsg{font-size:13px;color:var(--red);min-height:1em}
 .acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -214,6 +219,7 @@ button,input{font:inherit;color:inherit}
 <section class="sheet costs-off" id="sheet" hidden role="dialog" aria-modal="true"></section>
 
 <script>
+const APPV="1.6";
 const REPO="langflo163/FML-Github", INDEX="FML-Quartett/modelle.json";
 const KATS=[["alle","Alle",""],["auto","Autos","A"],["flugzeug","Flugzeuge","F"],["boot","Boote","B"],["heli","Helis","H"]];
 const KLABEL={auto:"RC-Car",flugzeug:"Flugzeug",boot:"Boot",heli:"Hubschrauber"};
@@ -298,12 +304,12 @@ async function loadSender(id){
   }catch(e){senders[id]=null}
   return senders[id];
 }
-const swIcon=pos=>`<svg viewBox="0 0 22 34" aria-hidden="true"><rect x="5" y="3" width="12" height="28" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="11" cy="${pos==="oben"?10:24}" r="4.5" fill="#D3202A"/></svg>`;
+const swIcon=pos=>/^(oben|unten)$/.test(pos)?`<svg viewBox="0 0 22 34" aria-hidden="true"><rect x="5" y="3" width="12" height="28" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="11" cy="${pos==="oben"?10:24}" r="4.5" fill="#D3202A"/></svg>`:"";
 function checkHTML(m){
   const sd=senderOf(m);if(!sd)return "";const prof=senders[sd.id];const bel=sd.belegung||{};
   const rows=[];
-  if(prof) prof.geber.forEach(g=>{const b=bel[g.id];if(b&&(b.start==="oben"||b.start==="unten")){
-    const txt=b[b.start]||"";rows.push(`<div class="crow"><span class="nb">${g.nr}</span><div class="t"><b>${esc(g.name)}${b.funktion?" · "+esc(b.funktion):""}</b>${txt?`<span>${esc(b.start)} = ${esc(txt)}</span>`:""}</div><div class="swi">${swIcon(b.start)}${esc(b.start)}</div></div>`)}});
+  if(prof) prof.geber.forEach(g=>{const b=bel[g.id];if(b&&b.start){
+    const txt=(stellOf(b).find(x=>x.name===b.start)||{}).text||"";rows.push(`<div class="crow"><span class="nb">${g.nr}</span><div class="t"><b>${esc(g.name)}${b.funktion?" · "+esc(b.funktion):""}</b>${txt?`<span>${esc(b.start)} = ${esc(txt)}</span>`:""}</div><div class="swi">${swIcon(b.start)}${esc(b.start)}</div></div>`)}});
   if(sd.modellspeicher) rows.push(`<div class="crow"><span class="nb k">M</span><div class="t"><b>Modellspeicher „${esc(sd.modellspeicher)}“</b><span>auf der ${esc(prof?prof.name:"Fernsteuerung")} wählen</span></div></div>`);
   (sd.hinweise||[]).forEach(h=>rows.push(`<div class="crow"><span class="nb k">!</span><div class="t"><b>${esc(h)}</b></div></div>`));
   if(!rows.length) return "";
@@ -318,7 +324,7 @@ function senderHTML(m){
     return (g.label?`<line x1="${lx}" y1="${ly}" x2="${x}" y2="${y}" stroke="${c}" stroke-width="3"/><circle cx="${x}" cy="${y}" r="6" fill="${c}" stroke="#fff" stroke-width="2"/>`:"")
       +`<g class="hit" data-geber="${g.id}"><circle cx="${lx}" cy="${ly}" r="30" fill="transparent"/><circle cx="${lx}" cy="${ly}" r="21" fill="${c}" stroke="#fff" stroke-width="3"/><text x="${lx}" y="${ly+1}" text-anchor="middle" dominant-baseline="middle" font-family="Saira Condensed,Arial Narrow,sans-serif" font-weight="800" font-size="24" fill="#fff">${g.nr}</text></g>`}).join("");
   const rows=prof.geber.filter(g=>bel[g.id]&&bel[g.id].funktion).map(g=>{const b=bel[g.id]||{};const sw=g.typ==="schalter";
-    const st=sw?["oben","unten"].filter(k=>b[k]).map(k=>`<span class="pill${b.start===k?" st":""}">${k} = ${esc(b[k])}${b.start===k?" · Start":""}</span>`).join(""):"";
+    const st=stellOf(b).map(x=>`<span class="pill${b.start===x.name?" st":""}">${esc(x.name)} = ${esc(x.text)}${b.start===x.name?" · Start":""}</span>`).join("");
     return `<button class="grow" data-geber="${g.id}"><span class="nb${b.funktion?"":" off"}">${g.nr}</span><div><div class="g">${esc(g.name)}${sw?" · Schalter":""}</div><div class="f${b.funktion?"":" nf"}">${b.funktion?esc(b.funktion):"antippen zum Eintragen"}</div></div>${st?`<div class="s">${st}</div>`:""}${b.notiz?`<div class="nt">${esc(b.notiz)}</div>`:""}</button>`}).join("");
   return `<div class="sec"><h4><span>Fernsteuerung</span><button class="ebtn" id="sedit">Modellspeicher &amp; Hinweise</button></h4>
     <div class="box"><div class="spic">${senderImg[sd.id]?`<img src="${senderImg[sd.id]}" alt="${esc(prof.name)}">`:`<div style="aspect-ratio:${prof.breite}/${prof.hoehe}"></div>`}<svg viewBox="0 0 ${prof.breite} ${prof.hoehe}">${lines}</svg></div>
@@ -352,27 +358,51 @@ function saveErr(e){
   return "Speichern hat nicht geklappt. Internet prüfen und noch einmal versuchen.";
 }
 function closeEditor(){const o=$("#ov");if(o)o.remove()}
+const DEFSTELL={rad:["links","rechts"],hebel:["ziehen","drücken"],wippe:["Stellung 1","Stellung 2"],taster:["gedrückt"],schalter:["oben","unten"],geber:["Stellung 1","Stellung 2"]};
+function stellOf(b){
+  if(!b)return [];
+  if(Array.isArray(b.stellungen))return b.stellungen.filter(x=>x&&x.text);
+  return ["oben","unten"].filter(k=>b[k]).map(k=>({name:k,text:b[k]}));
+}
 function openGeberEditor(gid){
   const m=models.find(x=>x.id===openId);const sd=senderOf(m);const prof=sd&&senders[sd.id];if(!prof)return;
   const g=prof.geber.find(x=>x.id===gid);if(!g)return;const b=(sd.belegung||{})[gid]||{};const sw=g.typ==="schalter";
   let start=b.start||"";
+  const have=stellOf(b);
+  const rowsInit=have.length?have.map(x=>({...x})):(DEFSTELL[g.typ]||DEFSTELL.geber).map(n=>({name:n,text:""}));
   const o=document.createElement("div");o.className="ov";o.id="ov";
   o.innerHTML=`<div class="esh" role="dialog" aria-modal="true" aria-label="${esc(g.name)}">
-    <div class="top"><span class="nb">${g.nr}</span><b>${esc(g.name)}</b></div>
+    <div class="etop"><span class="nb">${g.nr}</span><b>${esc(g.name)}</b></div>
     <label for="e-f">Funktion</label><input id="e-f" value="${esc(b.funktion||"")}" placeholder="z. B. DIG, Licht, Lenkmodus" autocomplete="off">
-    ${sw?`<div class="two"><div><label for="e-o">Stellung oben</label><input id="e-o" value="${esc(b.oben||"")}" placeholder="z. B. an" autocomplete="off"></div><div><label for="e-u">Stellung unten</label><input id="e-u" value="${esc(b.unten||"")}" placeholder="z. B. aus" autocomplete="off"></div></div>
-    <label>Vor dem Einschalten</label><div class="seg" id="e-s">${["oben","unten",""].map(k=>`<button type="button" data-s="${k}" aria-pressed="${start===k}">${k||"egal"}</button>`).join("")}</div>`:""}
+    <label>Stellungen – was passiert wo</label>
+    <div id="e-rows" class="srows"></div>
+    <button type="button" class="abtn small" id="e-add">+ Stellung</button>
+    ${sw?`<label>Vor dem Einschalten</label><div class="seg" id="e-s"></div>`:""}
     <label for="e-n">Notiz</label><input id="e-n" value="${esc(b.notiz||"")}" placeholder="optional" autocomplete="off">
     <p class="emsg" id="e-msg" role="status"></p>
     <div class="ebtns">${b.funktion?`<button class="abtn" id="e-del">Leeren</button>`:""}<button class="abtn" id="e-x">Abbrechen</button><button class="abtn primary" id="e-ok">Speichern</button></div></div>`;
   document.body.appendChild(o);
+  const box=$("#e-rows");
+  const rowHTML=(r,i)=>`<div class="srow"><input class="sn" value="${esc(r.name)}" placeholder="Stellung" aria-label="Name der Stellung ${i+1}" autocomplete="off"><input class="st" value="${esc(r.text)}" placeholder="Beschreibung, z. B. Licht an" aria-label="Beschreibung Stellung ${i+1}" autocomplete="off"><button type="button" class="sx" aria-label="Stellung entfernen">×</button></div>`;
+  const readRows=()=>[...box.querySelectorAll(".srow")].map((r,i)=>({name:r.querySelector(".sn").value.trim()||("Stellung "+(i+1)),text:r.querySelector(".st").value.trim()}));
+  const drawStart=()=>{const sg=$("#e-s");if(!sg)return;const names=readRows().map(r=>r.name);if(start&&!names.includes(start))start="";
+    sg.innerHTML=[...names,""].map(k=>`<button type="button" data-s="${esc(k)}" aria-pressed="${start===k}">${esc(k||"egal")}</button>`).join("")};
+  box.innerHTML=rowsInit.map(rowHTML).join("");drawStart();
+  box.addEventListener("input",ev=>{if(ev.target.classList.contains("sn"))drawStart()});
   o.addEventListener("click",async ev=>{
     if(ev.target===o||ev.target.closest("#e-x")){closeEditor();return}
+    if(ev.target.closest("#e-add")){box.insertAdjacentHTML("beforeend",rowHTML({name:"",text:""},box.children.length));drawStart();box.lastElementChild.querySelector(".sn").focus();return}
+    const rx=ev.target.closest(".sx");if(rx){rx.parentElement.remove();drawStart();return}
     const sb=ev.target.closest("[data-s]");if(sb){start=sb.dataset.s;o.querySelectorAll("[data-s]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.s===start));return}
     const del=ev.target.closest("#e-del"),ok=ev.target.closest("#e-ok");if(!del&&!ok)return;
-    const val=v=>(o.querySelector(v)?o.querySelector(v).value.trim():"");
-    const entry=del?null:{funktion:val("#e-f"),...(sw?{oben:val("#e-o"),unten:val("#e-u"),start}:{}),notiz:val("#e-n")};
-    if(entry){Object.keys(entry).forEach(k=>{if(!entry[k])delete entry[k]});if(!entry.funktion){$("#e-msg").textContent="Bitte eine Funktion eintragen (oder „Leeren“).";return}}
+    let entry=null;
+    if(!del){
+      const stell=readRows().filter(r=>r.text);
+      entry={funktion:$("#e-f").value.trim(),stellungen:stell,start:sw&&stell.some(r=>r.name===start)?start:"",notiz:$("#e-n").value.trim()};
+      if(!entry.stellungen.length)delete entry.stellungen;
+      Object.keys(entry).forEach(k=>{if(!entry[k])delete entry[k]});
+      if(!entry.funktion){$("#e-msg").textContent="Bitte eine Funktion eintragen (oder „Leeren“).";return}
+    }
     o.querySelectorAll("button").forEach(x=>x.disabled=true);$("#e-msg").textContent="Speichert …";
     try{await saveModel(m,d=>{d.sender=d.sender||{id:sd.id};d.sender.belegung=d.sender.belegung||{};if(entry)d.sender.belegung[gid]=entry;else delete d.sender.belegung[gid]},
         `Quartett-App: ${m.name} – ${g.name}${entry?" = "+entry.funktion:" geleert"}`);
@@ -385,7 +415,7 @@ function openSenderEditor(){
   const m=models.find(x=>x.id===openId);const sd=senderOf(m);if(!sd)return;
   const o=document.createElement("div");o.className="ov";o.id="ov";
   o.innerHTML=`<div class="esh" role="dialog" aria-modal="true" aria-label="Modellspeicher und Hinweise">
-    <div class="top"><span class="nb k">M</span><b>Modellspeicher &amp; Hinweise</b></div>
+    <div class="etop"><span class="nb k">M</span><b>Modellspeicher &amp; Hinweise</b></div>
     <label for="e-m">Modellspeicher auf der Fernsteuerung</label><input id="e-m" value="${esc(sd.modellspeicher||"")}" placeholder="z. B. Capra" autocomplete="off">
     <label for="e-h">Vor dem Einschalten – ein Hinweis pro Zeile</label><textarea id="e-h" placeholder="z. B. Erst Sender an, dann Akku ins Auto">${esc((sd.hinweise||[]).join("\n"))}</textarea>
     <p class="emsg" id="e-msg" role="status"></p>
@@ -442,7 +472,7 @@ function render(when){
   renderChips();
   const list=withCodes(models).filter(m=>filter==="alle"||m.kategorie===filter);
   $("#count").textContent=`${list.length} ${list.length===1?"Karte":"Karten"}`;
-  if(when) $("#stamp").textContent="Stand "+when.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  if(when) $("#stamp").textContent="Stand "+when.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})+" · App v"+APPV;
   $("#empty").hidden=list.length>0;
   $("#empty").textContent=models.length?"In dieser Kategorie gibt es noch keine Karte.":"Noch keine Modelle im Repo.";
   $("#deck").innerHTML=list.map(m=>`
