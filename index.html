@@ -71,9 +71,13 @@ button,input{font:inherit;color:inherit}
 .v.open{color:var(--muted);font-weight:400}
 .qfoot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:2px solid var(--ink);font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.8px;text-transform:uppercase}
 .qfoot span:last-child{color:var(--red)}
-.dots{display:flex;justify-content:center;gap:6px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+.dots{display:flex;justify-content:center;align-items:center;gap:6px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
 .dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
 .dots i.on{background:var(--red)}
+.dnav{display:none;flex:none;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);font-family:var(--f-display);font-weight:800;font-size:20px;line-height:1;cursor:pointer;margin:0 8px;align-items:center;justify-content:center;padding:0}
+.dnav:hover{background:var(--ink);color:var(--card)}
+.dnav:disabled{opacity:.3;cursor:default;background:var(--card);color:var(--ink)}
+@media (hover:hover) and (pointer:fine){.dnav{display:flex;position:fixed;top:50%;z-index:10;width:48px;height:48px;font-size:28px;margin:0;box-shadow:0 0 0 3px var(--bg)}#dprev{left:10px}#dnext{right:10px}.dnav:disabled{display:none}.dots i{cursor:pointer;width:9px;height:9px}.deck{cursor:grab}.deck.drag{cursor:grabbing;scroll-snap-type:none}.deck.drag .qcard{pointer-events:none}}
 .empty{margin:24px var(--sr) 0 var(--sl);padding:22px;border:2px dashed var(--line);border-radius:14px;color:var(--muted);text-align:center}
 
 /* Einrichtung */
@@ -219,7 +223,7 @@ button,input{font:inherit;color:inherit}
 <section class="sheet costs-off" id="sheet" hidden role="dialog" aria-modal="true"></section>
 
 <script>
-const APPV="1.9.3";
+const APPV="1.10";
 const REPO="langflo163/FML-Github", INDEX="FML-Quartett/modelle.json";
 const KATS=[["alle","Alle",""],["auto","Autos","A"],["flugzeug","Flugzeuge","F"],["boot","Boote","B"],["heli","Helis","H"]];
 const KLABEL={auto:"RC-Car",flugzeug:"Flugzeug",boot:"Boot",heli:"Hubschrauber"};
@@ -519,7 +523,7 @@ function render(when){
       <ul class="stats">${statRows(m,false)}</ul>
       <div class="qfoot"><span>${(m.komponenten||[]).length} Komponenten${(()=>{const n=(m.videos||[]).map(vidInfo).filter(Boolean).length;return n?` · ▶ ${n}`:""})()}</span><span>Datenblatt ›</span></div>
     </button>`).join("");
-  $("#dots").innerHTML=list.length>1?list.map((_,i)=>`<i class="${i===0?"on":""}"></i>`).join(""):"";
+  $("#dots").innerHTML=list.length>1?`<button class="dnav" id="dprev" aria-label="Vorherige Karte" disabled>‹</button>`+list.map((_,i)=>`<i class="${i===0?"on":""}" data-dot="${i}"></i>`).join("")+`<button class="dnav" id="dnext" aria-label="Nächste Karte">›</button>`:"";
   if(openId) renderSheet();
 }
 function renderSheet(){
@@ -608,7 +612,26 @@ $("#deck").addEventListener("scroll",()=>{
   const d=$("#deck"),cards=d.querySelectorAll(".qcard");if(!cards.length)return;
   const i=Math.round(d.scrollLeft/(cards[0].offsetWidth+14));
   document.querySelectorAll(".dots i").forEach((el,j)=>el.classList.toggle("on",j===i));
+  const pv=$("#dprev"),nx=$("#dnext");if(pv)pv.disabled=d.scrollLeft<4;if(nx)nx.disabled=d.scrollLeft>=d.scrollWidth-d.clientWidth-4;
 },{passive:true});
+// PC: Pfeile, Punkte, Mausrad, Ziehen mit der Maus, Pfeiltasten
+function deckIdx(){const d=$("#deck"),c=d.querySelectorAll(".qcard");if(!c.length)return 0;return Math.round(d.scrollLeft/(c[0].offsetWidth+14))}
+function deckGo(i){const d=$("#deck"),c=d.querySelectorAll(".qcard");if(!c.length)return;i=Math.max(0,Math.min(c.length-1,i));d.scrollTo({left:c[i].offsetLeft-c[0].offsetLeft,behavior:"smooth"})}
+document.addEventListener("click",e=>{
+  if(e.target.closest("#dprev")){deckGo(deckIdx()-1);return}
+  if(e.target.closest("#dnext")){deckGo(deckIdx()+1);return}
+  const dt=e.target.closest("[data-dot]");if(dt)deckGo(+dt.dataset.dot);
+});
+{let wl=0;$("#deck").addEventListener("wheel",e=>{const d=$("#deck");if(Math.abs(e.deltaX)>Math.abs(e.deltaY)||d.scrollWidth<=d.clientWidth+4)return;e.preventDefault();const t=Date.now();if(t-wl<350)return;wl=t;deckGo(deckIdx()+(e.deltaY>0?1:-1))},{passive:false})}
+{const d=$("#deck");let x0=null,s0=0,moved=false;
+ d.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse"||e.button!==0)return;x0=e.clientX;s0=d.scrollLeft;moved=false});
+ window.addEventListener("pointermove",e=>{if(x0==null)return;const dx=e.clientX-x0;if(!moved&&Math.abs(dx)>6){moved=true;d.classList.add("drag")}if(moved)d.scrollLeft=s0-dx});
+ window.addEventListener("pointerup",e=>{if(x0==null)return;const dx=e.clientX-x0;x0=null;if(!moved)return;d.classList.remove("drag");
+   const i=Math.round(s0/((d.querySelector(".qcard")||{offsetWidth:1}).offsetWidth+14));deckGo(Math.abs(dx)>40?i+(dx<0?1:-1):i);
+   const stop=ev=>{ev.stopPropagation();ev.preventDefault()};window.addEventListener("click",stop,{capture:true,once:true});setTimeout(()=>window.removeEventListener("click",stop,{capture:true}),50)});
+}
+document.addEventListener("keydown",e=>{if(openId||$("#ov")||$("#lb")||/INPUT|TEXTAREA/.test((e.target||{}).tagName||""))return;
+  if(e.key==="ArrowRight"){deckGo(deckIdx()+1);e.preventDefault()}else if(e.key==="ArrowLeft"){deckGo(deckIdx()-1);e.preventDefault()}});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&store.get("fmlq.token")&&!openId)load().catch(()=>{})});
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 start();

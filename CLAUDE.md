@@ -19,6 +19,8 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 
 ## Version
 
+v1.10 (03.11.2026): Am PC durch die Karten blättern – Pfeile links/rechts am Bildschirmrand, Punkte anklickbar, Mausrad, Ziehen mit der Maus, Pfeiltasten (nur bei Maus, am Handy unverändert).
+
 v1.9.3 (03.11.2026): Kasten „Vor dem Einschalten“ – Kopfzeile bricht um statt abgeschnitten („2 Punkte“); Untertitel im Datenblatt ohne doppelten Punkt bei leerem Maßstab.
 
 v1.9.2 (03.11.2026): Alle Texte gegen Überlaufen abgesichert – PDF (Titel 2-zeilig, Untertitel/Gruppen/Fußzeile mit „…“, Labels und Werte
