@@ -81,12 +81,17 @@
     let ty = y + 11;
     (m.werte || []).forEach((w, i) => {
       if (i) { doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(cx, ty - 3.6, R, ty - 3.6); }
-      set("Plex", "normal", 6.8, MUTED); doc.text((w.label || "").toUpperCase(), cx, ty);
-      set("PlexMono", "normal", 9.5, w.wert ? INK : MUTED); doc.text(w.wert || "offen", R, ty, { align: "right" });
-      let h = 5.2;
+      // Label links, Wert rechts – der Wert wird umbrochen, damit er nie ins Label oder Foto läuft
+      set("Plex", "normal", 6.8, MUTED); const lab = (w.label || "").toUpperCase();
+      const labW = Math.min(doc.getTextWidth(lab), cw * 0.45); doc.text(doc.splitTextToSize(lab, cw * 0.45)[0], cx, ty);
+      let vs = 9.5; set("PlexMono", "normal", vs, w.wert ? INK : MUTED);
+      const vw = cw - labW - 3; let val = doc.splitTextToSize(w.wert || "offen", vw);
+      if (val.length > 1) { vs = 8.2; doc.setFontSize(vs); val = doc.splitTextToSize(w.wert || "offen", vw); }
+      doc.text(val, R, ty, { align: "right" });
+      let h = 5.2 + (val.length - 1) * lh(vs);
       if (w.quelle) {
-        set("Plex", "normal", 6.2, MUTED); const q = doc.splitTextToSize(w.quelle, cw - 22);
-        doc.text(q, R, ty + 3.4, { align: "right" }); h += q.length * lh(6.2);
+        set("Plex", "normal", 6.2, MUTED); const q = doc.splitTextToSize(w.quelle, cw - 10);
+        doc.text(q, R, ty + 3.4 + (val.length - 1) * lh(vs), { align: "right" }); h += q.length * lh(6.2);
       }
       ty += h + 1.6;
     });

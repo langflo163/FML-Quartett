@@ -16,6 +16,8 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 
 ## Version
 
+v1.9.1 (03.11.2026): PDF – lange Werte bei „Technische Daten“ werden umbrochen (liefen vorher über Label und Foto).
+
 v1.9 (03.11.2026): Offline – alle Daten, Fotos, Sender-Profile/-Bilder landen im Cache `fmlq-data` (Cache Storage); bei Internet werden fehlende
 Dateien vorgeladen, PDF-Teile (pdf.js, lib, fonts) über den Service Worker. Offline geht alles außer Bearbeiten.
 
