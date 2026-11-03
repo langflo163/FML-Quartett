@@ -126,7 +126,7 @@ button,input{font:inherit;color:inherit}
 .totalrow{display:flex;justify-content:space-between;padding:10px 14px;border-top:2px solid var(--ink);font-family:var(--f-display);font-weight:800;font-size:18px;text-transform:uppercase}
 .totalrow span:last-child{font-family:var(--f-mono);font-size:16px;font-variant-numeric:tabular-nums}
 .chk{border:2px solid var(--red);border-radius:12px;background:var(--card);overflow:hidden}
-.chk .hd{white-space:nowrap;background:var(--red);color:#fff;font-family:var(--f-display);font-weight:800;font-size:17px;letter-spacing:1px;text-transform:uppercase;padding:7px 14px;display:flex;justify-content:space-between;gap:10px}
+.chk .hd{flex-wrap:wrap;row-gap:0;background:var(--red);color:#fff;font-family:var(--f-display);font-weight:800;font-size:17px;letter-spacing:1px;text-transform:uppercase;padding:7px 14px;display:flex;justify-content:space-between;gap:10px}
 .crow{display:flex;align-items:center;gap:12px;padding:9px 14px;border-top:1px solid var(--line)}
 .crow:first-of-type{border-top:0}
 .nb{flex:none;min-width:26px;width:auto;padding:0 6px;height:26px;border-radius:13px;white-space:nowrap;background:var(--red);color:#fff;font-family:var(--f-display);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
@@ -219,7 +219,7 @@ button,input{font:inherit;color:inherit}
 <section class="sheet costs-off" id="sheet" hidden role="dialog" aria-modal="true"></section>
 
 <script>
-const APPV="1.9.2";
+const APPV="1.9.3";
 const REPO="langflo163/FML-Github", INDEX="FML-Quartett/modelle.json";
 const KATS=[["alle","Alle",""],["auto","Autos","A"],["flugzeug","Flugzeuge","F"],["boot","Boote","B"],["heli","Helis","H"]];
 const KLABEL={auto:"RC-Car",flugzeug:"Flugzeug",boot:"Boot",heli:"Hubschrauber"};
@@ -537,7 +537,7 @@ function renderSheet(){
     <div class="sbar"><span class="code">${esc(m.code)}</span><h3>${esc(m.name)}</h3><button class="ibtn" id="close">Zurück</button></div>
     <div class="swrap">
       <div class="sphoto">${galleryHTML(m)}</div>
-      <div class="lead"><h2>${esc(m.name)}</h2><p>${esc(KLABEL[m.kategorie]||"")} · ${esc(m.massstab||"")} · ${esc(m.untertitel||"")}</p></div>
+      <div class="lead"><h2>${esc(m.name)}</h2><p>${[KLABEL[m.kategorie],m.massstab,m.untertitel].filter(Boolean).map(esc).join(" · ")}</p></div>
       <div class="acts"><button class="abtn" data-pdf="0">PDF</button><button class="abtn" data-pdf="1">PDF mit Kosten</button><button class="abtn primary" id="pdfshare" hidden>PDF teilen</button><span class="amsg" id="pdfmsg" role="status"></span></div>
       ${checkHTML(m)}
       <div class="sec"><h4>Technische Daten</h4><div class="box"><ul class="stats">${statRows(m,true)}</ul></div></div>
