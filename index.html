@@ -105,6 +105,10 @@ button,input{font:inherit;color:inherit}
 .gal .photo{flex:none;width:100%;scroll-snap-align:start;cursor:zoom-in}
 .gcount{position:absolute;right:10px;bottom:10px;background:var(--ink);color:var(--card);font-family:var(--f-mono);font-size:12px;padding:3px 8px;border-radius:999px;pointer-events:none}
 .badge{position:absolute;right:8px;bottom:8px;background:var(--ink);color:var(--card);font-family:var(--f-mono);font-size:12px;padding:2px 8px;border-radius:999px}
+.gnav{display:none;position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:42px;height:42px;border-radius:50%;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);font-family:var(--f-display);font-weight:800;font-size:24px;line-height:1;cursor:pointer;align-items:center;justify-content:center;padding:0}
+.gnav:hover{background:var(--ink);color:var(--card)}
+.gprev{left:10px}.gnext{right:10px}
+@media (hover:hover) and (pointer:fine){.gnav{display:flex}.gal{cursor:grab}.gal.drag{cursor:grabbing;scroll-snap-type:none}.gal.drag .photo{pointer-events:none}}
 .lb{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column}
 .lb .gal{flex:1;height:100%}
 .lb .gal .photo{aspect-ratio:auto;height:100%;background:#000;border:0;cursor:default}
@@ -223,7 +227,7 @@ button,input{font:inherit;color:inherit}
 <section class="sheet costs-off" id="sheet" hidden role="dialog" aria-modal="true"></section>
 
 <script>
-const APPV="1.10";
+const APPV="1.11";
 const REPO="langflo163/FML-Github", INDEX="FML-Quartett/modelle.json";
 const KATS=[["alle","Alle",""],["auto","Autos","A"],["flugzeug","Flugzeuge","F"],["boot","Boote","B"],["heli","Helis","H"]];
 const KLABEL={auto:"RC-Car",flugzeug:"Flugzeug",boot:"Boot",heli:"Hubschrauber"};
@@ -320,12 +324,12 @@ function videosHTML(m){
 function galleryHTML(m){
   const f=fotosOf(m);
   if(f.length<2) return photoHTML(m).replace('class="photo"','class="photo" data-i="0"'+(f.length?"":' data-none="1"'));
-  return `<div class="gal" id="gal">${f.map((p,i)=>`<div class="photo" data-i="${i}">${phHTML(m,1)}${imgHTML(p,m.name+" – Foto "+(i+1))}</div>`).join("")}</div><span class="gcount" id="gcount">1/${f.length}</span>`;
+  return `<div class="gal" id="gal">${f.map((p,i)=>`<div class="photo" data-i="${i}">${phHTML(m,1)}${imgHTML(p,m.name+" – Foto "+(i+1))}</div>`).join("")}</div><span class="gcount" id="gcount">1/${f.length}</span><button class="gnav gprev" data-gnav="-1" aria-label="Vorheriges Foto">‹</button><button class="gnav gnext" data-gnav="1" aria-label="Nächstes Foto">›</button>`;
 }
 function openLightbox(i){
   const m=models.find(x=>x.id===openId);if(!m)return;const f=fotosOf(m);if(!f.length)return;
   lbIdx=i;const lb=document.createElement("div");lb.className="lb";lb.id="lb";lb.setAttribute("role","dialog");lb.setAttribute("aria-modal","true");
-  lb.innerHTML=`<div class="lbbar"><span id="lbcount">${i+1}/${f.length}</span><button class="ibtn" id="lbclose">Schließen</button></div><div class="gal" id="lbgal">${f.map((p,j)=>`<div class="photo">${imgHTML(p,m.name+" – Foto "+(j+1))}</div>`).join("")}</div>`;
+  lb.innerHTML=`<div class="lbbar"><span id="lbcount">${i+1}/${f.length}</span><button class="ibtn" id="lbclose">Schließen</button></div><div class="gal" id="lbgal">${f.map((p,j)=>`<div class="photo">${imgHTML(p,m.name+" – Foto "+(j+1))}</div>`).join("")}</div>${f.length>1?'<button class="gnav gprev" data-gnav="-1" aria-label="Vorheriges Foto">‹</button><button class="gnav gnext" data-gnav="1" aria-label="Nächstes Foto">›</button>':""}`;
   document.body.appendChild(lb);
   const g=$("#lbgal");g.scrollLeft=i*g.clientWidth;
   g.addEventListener("scroll",()=>{const k=Math.round(g.scrollLeft/g.clientWidth);$("#lbcount").textContent=`${k+1}/${f.length}`},{passive:true});
@@ -632,6 +636,19 @@ document.addEventListener("click",e=>{
 }
 document.addEventListener("keydown",e=>{if(openId||$("#ov")||$("#lb")||/INPUT|TEXTAREA/.test((e.target||{}).tagName||""))return;
   if(e.key==="ArrowRight"){deckGo(deckIdx()+1);e.preventDefault()}else if(e.key==="ArrowLeft"){deckGo(deckIdx()-1);e.preventDefault()}});
+// PC: Fotos blättern (Pfeile, Ziehen mit der Maus, Pfeiltasten)
+function galGo(g,delta){if(!g)return;const n=g.children.length,w=g.clientWidth;const k=Math.max(0,Math.min(n-1,Math.round(g.scrollLeft/w)+delta));g.scrollTo({left:k*w,behavior:"smooth"})}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-gnav]");if(!b)return;e.stopPropagation();galGo((b.closest(".lb")||b.closest(".sphoto")).querySelector(".gal"),+b.dataset.gnav)},true);
+{let g=null,x0=0,s0=0,moved=false;
+ document.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse"||e.button!==0)return;const t=e.target.closest(".gal");if(!t||t.children.length<2)return;g=t;x0=e.clientX;s0=g.scrollLeft;moved=false});
+ window.addEventListener("pointermove",e=>{if(!g)return;const dx=e.clientX-x0;if(!moved&&Math.abs(dx)>6){moved=true;g.classList.add("drag")}if(moved){g.scrollLeft=s0-dx;e.preventDefault()}});
+ window.addEventListener("pointerup",e=>{if(!g)return;const t=g,dx=e.clientX-x0;g=null;if(!moved)return;t.classList.remove("drag");
+   const w=t.clientWidth,k=Math.round(s0/w);t.scrollTo({left:(Math.abs(dx)>40?k+(dx<0?1:-1):k)*w,behavior:"smooth"});
+   const stop=ev=>{ev.stopPropagation();ev.preventDefault()};window.addEventListener("click",stop,{capture:true,once:true});setTimeout(()=>window.removeEventListener("click",stop,{capture:true}),50)});
+ document.addEventListener("dragstart",e=>{if(e.target.closest&&e.target.closest(".gal"))e.preventDefault()});
+}
+document.addEventListener("keydown",e=>{if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;if($("#ov")||/INPUT|TEXTAREA/.test((e.target||{}).tagName||""))return;
+  const g=$("#lb")?$("#lbgal"):(openId?$("#gal"):null);if(!g)return;galGo(g,e.key==="ArrowRight"?1:-1);e.preventDefault()});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&store.get("fmlq.token")&&!openId)load().catch(()=>{})});
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 start();
