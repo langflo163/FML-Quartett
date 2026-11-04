@@ -227,7 +227,7 @@ button,input{font:inherit;color:inherit}
 <section class="sheet costs-off" id="sheet" hidden role="dialog" aria-modal="true"></section>
 
 <script>
-const APPV="1.11";
+const APPV="1.11.1";
 const REPO="langflo163/FML-Github", INDEX="FML-Quartett/modelle.json";
 const KATS=[["alle","Alle",""],["auto","Autos","A"],["flugzeug","Flugzeuge","F"],["boot","Boote","B"],["heli","Helis","H"]];
 const KLABEL={auto:"RC-Car",flugzeug:"Flugzeug",boot:"Boot",heli:"Hubschrauber"};
@@ -478,6 +478,9 @@ let pdfFile=null;
 function loadScriptOnce(src){return new Promise((ok,bad)=>{if(document.querySelector(`script[src="${src}"]`))return ok();const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>bad(new Error("lib"));document.head.appendChild(s)})}
 async function sharePdf(){
   if(!pdfFile)return;
+  const pc=matchMedia("(hover:hover) and (pointer:fine)").matches;
+  if(pc){const u=URL.createObjectURL(pdfFile),a=document.createElement("a");a.href=u;a.download=pdfFile.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);
+    $("#pdfshare").hidden=true;$("#pdfmsg").textContent="PDF heruntergeladen: "+pdfFile.name;return}
   if(navigator.canShare&&navigator.canShare({files:[pdfFile]})){
     try{await navigator.share({files:[pdfFile],title:pdfFile.name});$("#pdfshare").hidden=true;$("#pdfmsg").textContent="";return}
     catch(e){if(e&&e.name==="AbortError"){$("#pdfmsg").textContent="";return}

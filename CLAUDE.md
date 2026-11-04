@@ -19,6 +19,8 @@ Commits nur mit `langflo163@users.noreply.github.com`.
 
 ## Version
 
+v1.11.1 (04.11.2026): PDF am PC wird direkt heruntergeladen (Dateiname FML-Quartett_…pdf) statt über das Windows-Teilen-Fenster; am Handy weiter Teilen-Menü.
+
 v1.11 (04.11.2026): Am PC durch die Fotos blättern – Pfeile auf dem Foto (Datenblatt und Vollbild), Ziehen mit der Maus, Pfeiltasten (nur bei Maus, am Handy unverändert).
 
 v1.10 (03.11.2026): Am PC durch die Karten blättern – Pfeile links/rechts am Bildschirmrand, Punkte anklickbar, Mausrad, Ziehen mit der Maus, Pfeiltasten (nur bei Maus, am Handy unverändert).
